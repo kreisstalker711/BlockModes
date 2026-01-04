@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockModes - Voxel Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #1a1a2e;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Main Menu */
+        #mainMenu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .logo {
+            max-width: 400px;
+            width: 60%;
+            height: auto;
+            margin-bottom: 40px;
+        }
+
+        .navbar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .account-display {
+            color: white;
+            font-size: 18px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-btn {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            background: rgba(52, 152, 219, 0.6);
+            padding: 10px 25px;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .nav-btn:hover {
+            background: rgba(52, 152, 219, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 800px;
+        }
+
+        .mode-card {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 16px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-8px);
+            background: rgba(255,255,255,0.25);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .mode-card h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .mode-card p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* HUD */
+        #hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+        }
+
+        #hud.active {
+            display: block;
+        }
+
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: white;
+        }
+
+        .crosshair::before {
+            width: 2px;
+            height: 20px;
+            left: 9px;
+        }
+
+        .crosshair::after {
+            height: 2px;
+            width: 20px;
+            top: 9px;
+        }
+
+        .hotbar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            pointer-events: all;
+        }
+
+        .hotbar-slot {
+            width: 60px;
+            height: 60px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .hotbar-slot.active {
+            border-color: white;
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .health-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .heart {
+            width: 30px;
+            height: 30px;
+            background: #e74c3c;
+            clip-path: polygon(50% 20%, 61% 8%, 75% 8%, 86% 20%, 86% 36%, 50% 80%, 14% 36%, 14% 20%, 25% 8%, 39% 8%);
+        }
+
+        .heart.empty {
+            background: rgba(231, 76, 60, 0.3);
+        }
+
+        /* Pause Menu */
+        #pauseMenu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 999;
+        }
+
+        #pauseMenu.active {
+            display: flex;
+        }
+
+        #pauseMenu h1 {
+            color: white;
+            font-size: 48px;
+            margin-bottom: 40px;
+        }
+
+        .menu-btn {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 12px;
+            padding: 15px 40px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255,255,255,0.25);
+            transform: scale(1.05);
+        }
+
+        .info-text {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 14px;
+            text-align: right;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* BattleModes UI */
+        .weapon-selector {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .weapon-selector h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .weapon-item {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .weapon-item:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .weapon-item.active {
+            background: rgba(100,200,100,0.4);
+            border: 2px solid #4CAF50;
+        }
+
+        .nation-ui {
+            position: absolute;
+            top: 20px;
+            right: 200px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+            min-width: 200px;
+        }
+
+        .nation-ui h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+
+        .nation-info {
+            font-size: 13px;
+            margin: 5px 0;
+        }
+
+        .nation-btn {
+            background: #667eea;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .nation-btn:hover {
+            background: #5568d3;
+        }
+
+        #nationModal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20,20,40,0.95);
+            padding: 30px;
+            border-radius: 16px;
+            border: 2px solid #667eea;
+            z-index: 2000;
+            display: none;
+        }
+
+        #nationModal.active {
+            display: block;
+        }
+
+        #nationModal h2 {
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        #nationModal input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 2px solid #667eea;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-option.selected {
+            border-color: white;
+            transform: scale(1.2);
+        }
+
+        .ammo-display {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .border-marker {
+            position: absolute;
+            width: 1px;
+            height: 100%;
+            background: rgba(255,0,0,0.3);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Main Menu -->
+    <div id="mainMenu">
+        <nav class="navbar">
+            <div id="accountDisplay" class="account-display">Account: Guest</div>
+            <a href="login.html" class="nav-btn">Login</a>
+        </nav>
+        <img src="logo.png" class="logo" alt="BlockModes Logo">
+        <div class="mode-grid">
+            <div class="mode-card" data-mode="creative">
+                <h2>🧱 Creative</h2>
+                <p>Unlimited blocks, flying, instant break. Build without limits.</p>
+            </div>
+            <div class="mode-card" data-mode="survival">
+                <h2>⚔️ Survival</h2>
+                <p>Gather resources, manage health, survive the night.</p>
+            </div>
+            <div class="mode-card" data-mode="skyblock">
+                <h2>🏝️ Skyblock</h2>
+                <p>Start on a floating island. Expand carefully.</p>
+            </div>
+            <div class="mode-card" data-mode="parkour">
+                <h2>🧩 Parkour</h2>
+                <p>Jump through challenging courses. Speed is key.</p>
+            </div>
+            <div class="mode-card" data-mode="battlemodes">
+                <h2>⚔️ BattleModes</h2>
+                <p>Create nations, build borders, fight for territory!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div class="crosshair"></div>
+        
+        <div class="hotbar">
+            <div class="hotbar-slot active" data-slot="0">Grass</div>
+            <div class="hotbar-slot" data-slot="1">Stone</div>
+            <div class="hotbar-slot" data-slot="2">Dirt</div>
+            <div class="hotbar-slot" data-slot="3">Wood</div>
+            <div class="hotbar-slot" data-slot="4">Sand</div>
+        </div>
+
+        <div class="health-bar">
+            <div class="heart"></div>
+            <div class="heart"></div>
+            <div class="heart"></div>
+            <div class="heart"></div>
+            <div class="heart"></div>
+        </div>
+
+        <div class="info-text">
+            <div id="modeInfo">Mode: Creative</div>
+            <div>Position: <span id="posInfo">0, 0, 0</span></div>
+            <div>FPS: <span id="fpsInfo">60</span></div>
+        </div>
+
+        <!-- BattleModes UI -->
+        <div class="weapon-selector" style="display: none;">
+            <h3>⚔️ Weapons</h3>
+            <div class="weapon-item active" data-weapon="bow">🏹 Bow (∞)</div>
+            <div class="weapon-item" data-weapon="rifle">🔫 Rifle (30)</div>
+            <div class="weapon-item" data-weapon="shotgun">💥 Shotgun (8)</div>
+            <div class="weapon-item" data-weapon="sniper">🎯 Sniper (5)</div>
+        </div>
+
+        <div class="nation-ui" style="display: none;">
+            <h3>🏰 Nation</h3>
+            <div class="nation-info">
+                <div>Name: <span id="nationName">None</span></div>
+                <div>Territory: <span id="territory">0</span> blocks</div>
+                <div>Members: <span id="members">1</span></div>
+            </div>
+            <button class="nation-btn" id="createNationBtn">Create Nation</button>
+            <button class="nation-btn" id="claimLandBtn" style="display: none;">Claim Land</button>
+        </div>
+
+        <div class="ammo-display" style="display: none;">
+            Ammo: <span id="ammoCount">30</span>
+        </div>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pauseMenu">
+        <h1>PAUSED</h1>
+        <button class="menu-btn" id="resumeBtn">Resume Game</button>
+        <button class="menu-btn" id="mainMenuBtn">Main Menu</button>
+    </div>
+
+    <!-- Nation Creation Modal -->
+    <div id="nationModal">
+        <h2>⚔️ Create Your Nation</h2>
+        <input type="text" id="nationNameInput" placeholder="Enter nation name..." maxlength="20">
+        <div class="color-picker">
+            <div class="color-option selected" data-color="#FF5252" style="background: #FF5252;"></div>
+            <div class="color-option" data-color="#4CAF50" style="background: #4CAF50;"></div>
+            <div class="color-option" data-color="#2196F3" style="background: #2196F3;"></div>
+            <div class="color-option" data-color="#FFC107" style="background: #FFC107;"></div>
+            <div class="color-option" data-color="#9C27B0" style="background: #9C27B0;"></div>
+        </div>
+        <button class="nation-btn" id="confirmNationBtn">Create Nation</button>
+        <button class="nation-btn" id="cancelNationBtn" style="background: #666;">Cancel</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="module">
+        // ===========================================
+        // GAME MODE SYSTEM
+        // ===========================================
+        const GameModes = {
+            creative: {
+                name: "Creative",
+                allowFlying: true,
+                breakSpeed: 0,
+                placeSpeed: 0,
+                startingBlocks: ['grass', 'stone', 'dirt', 'wood', 'sand'],
+                hasHealth: false,
+                gravity: 0.02,
+                jumpForce: 0.15,
+                spawnHeight: 50
+            },
+            survival: {
+                name: "Survival",
+                allowFlying: false,
+                breakSpeed: 500,
+                placeSpeed: 200,
+                startingBlocks: [],
+                hasHealth: true,
+                maxHealth: 10,
+                gravity: 0.02,
+                jumpForce: 0.15,
+                spawnHeight: 50
+            },
+            skyblock: {
+                name: "Skyblock",
+                allowFlying: false,
+                breakSpeed: 500,
+                placeSpeed: 200,
+                startingBlocks: ['grass', 'stone', 'dirt'],
+                hasHealth: true,
+                maxHealth: 10,
+                gravity: 0.02,
+                jumpForce: 0.15,
+                spawnHeight: 30,
+                customTerrain: 'skyblock'
+            },
+            parkour: {
+                name: "Parkour",
+                allowFlying: false,
+                breakSpeed: Infinity,
+                placeSpeed: Infinity,
+                startingBlocks: [],
+                hasHealth: false,
+                gravity: 0.025,
+                jumpForce: 0.18,
+                spawnHeight: 20,
+                customTerrain: 'parkour'
+            },
+            battlemodes: {
+                name: "BattleModes",
+                allowFlying: false,
+                breakSpeed: 500,
+                placeSpeed: 200,
+                startingBlocks: ['grass', 'stone', 'wood'],
+                hasHealth: true,
+                maxHealth: 10,
+                gravity: 0.02,
+                jumpForce: 0.15,
+                spawnHeight: 50,
+                hasWeapons: true,
+                hasShooting: true,
+                hasNations: true
+            }
+        };
+
+        // ===========================================
+        // BLOCK DEFINITIONS
+        // ===========================================
+        const BlockTypes = {
+            air: { name: 'Air', color: 0x000000, solid: false },
+            grass: { name: 'Grass', color: 0x4CAF50, solid: true },
+            stone: { name: 'Stone', color: 0x808080, solid: true },
+            dirt: { name: 'Dirt', color: 0x8B4513, solid: true },
+            wood: { name: 'Wood', color: 0xA0522D, solid: true },
+            sand: { name: 'Sand', color: 0xF4A460, solid: true },
+            border: { name: 'Border', color: 0xFF0000, solid: true, glowing: true }
+        };
+
+        // ===========================================
+        // GAME ENGINE CORE
+        // ===========================================
+        class Game {
+            constructor() {
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.world = null;
+                this.player = null;
+                this.input = null;
+                this.currentMode = null;
+                this.paused = false;
+                this.running = false;
+                
+                // BattleModes specific
+                this.nations = new Map();
+                this.projectiles = [];
+                this.borders = [];
+                
+                this.init();
+            }
+
+            init() {
+                this.setupRenderer();
+                this.setupUI();
+            }
+
+            setupRenderer() {
+                const canvas = document.getElementById('gameCanvas');
+                this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setClearColor(0x87CEEB);
+
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.Fog(0x87CEEB, 50, 200);
+
+                // Lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                this.scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.4);
+                dirLight.position.set(50, 100, 50);
+                this.scene.add(dirLight);
+
+                // Camera
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 300);
+
+                window.addEventListener('resize', () => this.onResize());
+            }
+
+            setupUI() {
+                // Display username
+                let username = 'Guest';
+                const storedData = sessionStorage.getItem('blockmodesPlayer');
+                if (storedData) {
+                    const data = JSON.parse(storedData);
+                    if (data.username) username = data.username;
+                }
+                document.getElementById('accountDisplay').textContent = `Account: ${username}`;
+
+                // Mode selection
+                document.querySelectorAll('.mode-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const mode = card.dataset.mode;
+                        this.startGame(mode);
+                    });
+                });
+
+                // Pause menu
+                document.getElementById('resumeBtn').addEventListener('click', () => {
+                    this.togglePause();
+                });
+
+                document.getElementById('mainMenuBtn').addEventListener('click', () => {
+                    this.returnToMenu();
+                });
+            }
+
+            startGame(modeName) {
+                this.currentMode = GameModes[modeName];
+                
+                // Hide menu, show HUD
+                document.getElementById('mainMenu').classList.add('hidden');
+                document.getElementById('hud').classList.add('active');
+                document.getElementById('modeInfo').textContent = `Mode: ${this.currentMode.name}`;
+
+                // Initialize systems
+                this.world = new World(this.scene, this.currentMode);
+                this.player = new Player(this.camera, this.currentMode, this.world, this);
+                this.input = new InputManager(this.player, this);
+
+                // BattleModes setup
+                if (this.currentMode.hasNations) {
+                    document.querySelector('.weapon-selector').style.display = 'block';
+                    document.querySelector('.nation-ui').style.display = 'block';
+                    document.querySelector('.ammo-display').style.display = 'block';
+                    this.setupBattleModes();
+                } else {
+                    document.querySelector('.weapon-selector').style.display = 'none';
+                    document.querySelector('.nation-ui').style.display = 'none';
+                    document.querySelector('.ammo-display').style.display = 'none';
+                }
+
+                // Update health display
+                if (!this.currentMode.hasHealth) {
+                    document.querySelector('.health-bar').style.display = 'none';
+                } else {
+                    document.querySelector('.health-bar').style.display = 'flex';
+                }
+
+                this.running = true;
+                this.animate();
+            }
+
+            setupBattleModes() {
+                // Weapon selection
+                document.querySelectorAll('.weapon-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        document.querySelectorAll('.weapon-item').forEach(i => i.classList.remove('active'));
+                        item.classList.add('active');
+                        this.player.currentWeapon = item.dataset.weapon;
+                        this.player.updateAmmo();
+                    });
+                });
+
+                // Nation creation
+                document.getElementById('createNationBtn').addEventListener('click', () => {
+                    document.getElementById('nationModal').classList.add('active');
+                    this.paused = true;
+                });
+
+                document.getElementById('confirmNationBtn').addEventListener('click', () => {
+                    const name = document.getElementById('nationNameInput').value.trim();
+                    const color = document.querySelector('.color-option.selected').dataset.color;
+                    
+                    if (name) {
+                        this.player.nation = {
+                            name: name,
+                            color: color,
+                            territory: [],
+                            members: 1
+                        };
+                        
+                        this.nations.set(name, this.player.nation);
+                        
+                        document.getElementById('nationName').textContent = name;
+                        document.getElementById('createNationBtn').style.display = 'none';
+                        document.getElementById('claimLandBtn').style.display = 'block';
+                        document.getElementById('nationModal').classList.remove('active');
+                        this.paused = false;
+                    }
+                });
+
+                document.getElementById('cancelNationBtn').addEventListener('click', () => {
+                    document.getElementById('nationModal').classList.remove('active');
+                    this.paused = false;
+                });
+
+                // Color picker
+                document.querySelectorAll('.color-option').forEach(opt => {
+                    opt.addEventListener('click', () => {
+                        document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+                        opt.classList.add('selected');
+                    });
+                });
+
+                // Claim land
+                document.getElementById('claimLandBtn').addEventListener('click', () => {
+                    this.claimLand();
+                });
+            }
+
+            claimLand() {
+                if (!this.player.nation) return;
+
+                const pos = this.player.position;
+                const chunkX = Math.floor(pos.x / 16);
+                const chunkZ = Math.floor(pos.z / 16);
+                const key = `${chunkX},${chunkZ}`;
+
+                // Check if already claimed
+                let claimed = false;
+                this.nations.forEach(nation => {
+                    if (nation.territory.includes(key)) {
+                        claimed = true;
+                    }
+                });
+
+                if (!claimed) {
+                    this.player.nation.territory.push(key);
+                    document.getElementById('territory').textContent = this.player.nation.territory.length * 256;
+                    
+                    // Create border markers
+                    this.createBorder(chunkX, chunkZ, this.player.nation.color);
+                }
+            }
+
+            createBorder(cx, cz, color) {
+                const borderHeight = 100;
+                const geo = new THREE.BoxGeometry(0.2, borderHeight, 16);
+                const mat = new THREE.MeshBasicMaterial({ 
+                    color: color,
+                    transparent: true,
+                    opacity: 0.5
+                });
+
+                // Create 4 border walls
+                const positions = [
+                    [cx * 16, borderHeight / 2, cz * 16],
+                    [cx * 16 + 16, borderHeight / 2, cz * 16],
+                    [cx * 16, borderHeight / 2, cz * 16 + 16],
+                    [cx * 16 + 16, borderHeight / 2, cz * 16 + 16]
+                ];
+
+                positions.forEach(pos => {
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.set(...pos);
+                    this.scene.add(mesh);
+                    this.borders.push(mesh);
+                });
+            }
+
+            updateProjectiles() {
+                for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                    const proj = this.projectiles[i];
+                    proj.position.add(proj.velocity);
+                    proj.mesh.position.copy(proj.position);
+                    
+                    proj.lifetime--;
+                    
+                    // Check collision with blocks
+                    const block = this.world.getBlock(
+                        Math.floor(proj.position.x),
+                        Math.floor(proj.position.y),
+                        Math.floor(proj.position.z)
+                    );
+
+                    if (proj.lifetime <= 0 || (block && BlockTypes[block].solid)) {
+                        this.scene.remove(proj.mesh);
+                        this.projectiles.splice(i, 1);
+                    }
+                }
+            }
+
+            shootProjectile(weapon) {
+                const dir = new THREE.Vector3(0, 0, -1);
+                dir.applyEuler(this.camera.rotation);
+
+                const spread = weapon === 'shotgun' ? 0.1 : weapon === 'rifle' ? 0.02 : 0;
+                const pellets = weapon === 'shotgun' ? 8 : 1;
+
+                for (let i = 0; i < pellets; i++) {
+                    const spreadDir = dir.clone();
+                    if (spread > 0) {
+                        spreadDir.x += (Math.random() - 0.5) * spread;
+                        spreadDir.y += (Math.random() - 0.5) * spread;
+                        spreadDir.z += (Math.random() - 0.5) * spread;
+                        spreadDir.normalize();
+                    }
+
+                    const speed = weapon === 'sniper' ? 2.0 : weapon === 'rifle' ? 1.5 : 0.8;
+                    const velocity = spreadDir.multiplyScalar(speed);
+
+                    const geo = new THREE.SphereGeometry(0.1);
+                    const mat = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.copy(this.camera.position);
+                    this.scene.add(mesh);
+
+                    this.projectiles.push({
+                        position: this.camera.position.clone(),
+                        velocity: velocity,
+                        mesh: mesh,
+                        lifetime: weapon === 'sniper' ? 200 : 100
+                    });
+                }
+            }
+
+            togglePause() {
+                this.paused = !this.paused;
+                const pauseMenu = document.getElementById('pauseMenu');
+                
+                if (this.paused) {
+                    pauseMenu.classList.add('active');
+                    this.input.exitPointerLock();
+                } else {
+                    pauseMenu.classList.remove('active');
+                    this.input.requestPointerLock();
+                }
+            }
+
+            returnToMenu() {
+                this.running = false;
+                this.paused = false;
+                
+                // Cleanup
+                if (this.world) this.world.dispose();
+                if (this.input) this.input.dispose();
+                
+                // Reset UI
+                document.getElementById('pauseMenu').classList.remove('active');
+                document.getElementById('hud').classList.remove('active');
+                document.getElementById('mainMenu').classList.remove('hidden');
+            }
+
+            animate() {
+                if (!this.running) return;
+
+                requestAnimationFrame(() => this.animate());
+
+                if (!this.paused) {
+                    this.player.update();
+                    this.world.update(this.player.position);
+                    
+                    // Update projectiles in BattleModes
+                    if (this.currentMode.hasShooting) {
+                        this.updateProjectiles();
+                    }
+                    
+                    // Update position info
+                    const pos = this.player.position;
+                    document.getElementById('posInfo').textContent = 
+                        `${Math.floor(pos.x)}, ${Math.floor(pos.y)}, ${Math.floor(pos.z)}`;
+                }
+
+                this.renderer.render(this.scene, this.camera);
+            }
+
+            onResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        }
+
+        // ===========================================
+        // WORLD / CHUNK SYSTEM
+        // ===========================================
+        class World {
+            constructor(scene, mode) {
+                this.scene = scene;
+                this.mode = mode;
+                this.chunks = new Map();
+                this.chunkSize = 16;
+                this.renderDistance = 4;
+                this.blockMeshes = new Map();
+                
+                this.generateInitialWorld();
+            }
+
+            generateInitialWorld() {
+                const center = { x: 0, z: 0 };
+                
+                for (let x = -this.renderDistance; x <= this.renderDistance; x++) {
+                    for (let z = -this.renderDistance; z <= this.renderDistance; z++) {
+                        this.generateChunk(x, z);
+                    }
+                }
+            }
+
+            generateChunk(cx, cz) {
+                const key = `${cx},${cz}`;
+                if (this.chunks.has(key)) return;
+
+                const chunk = new Array(this.chunkSize);
+                for (let x = 0; x < this.chunkSize; x++) {
+                    chunk[x] = new Array(this.chunkSize);
+                    for (let z = 0; z < this.chunkSize; z++) {
+                        chunk[x][z] = new Array(64).fill('air');
+                        
+                        if (this.mode.customTerrain === 'skyblock') {
+                            this.generateSkyblock(chunk, x, z, cx, cz);
+                        } else if (this.mode.customTerrain === 'parkour') {
+                            this.generateParkour(chunk, x, z, cx, cz);
+                        } else {
+                            this.generateTerrain(chunk, x, z, cx, cz);
+                        }
+                    }
+                }
+
+                this.chunks.set(key, chunk);
+                this.renderChunk(cx, cz, chunk);
+            }
+
+            generateTerrain(chunk, lx, lz, cx, cz) {
+                const wx = cx * this.chunkSize + lx;
+                const wz = cz * this.chunkSize + lz;
+                
+                const height = 20 + Math.floor(
+                    Math.sin(wx * 0.1) * Math.cos(wz * 0.1) * 8 +
+                    Math.sin(wx * 0.05) * 5
+                );
+
+                for (let y = 0; y < height; y++) {
+                    if (y === height - 1) {
+                        chunk[lx][lz][y] = 'grass';
+                    } else if (y > height - 4) {
+                        chunk[lx][lz][y] = 'dirt';
+                    } else {
+                        chunk[lx][lz][y] = 'stone';
+                    }
+                }
+            }
+
+            generateSkyblock(chunk, lx, lz, cx, cz) {
+                if (cx === 0 && cz === 0 && lx < 5 && lz < 5) {
+                    chunk[lx][lz][15] = 'grass';
+                    chunk[lx][lz][14] = 'dirt';
+                    chunk[lx][lz][13] = 'stone';
+                    
+                    if (lx === 2 && lz === 2) {
+                        chunk[lx][lz][16] = 'wood';
+                    }
+                }
+            }
+
+            generateParkour(chunk, lx, lz, cx, cz) {
+                const wx = cx * this.chunkSize + lx;
+                const wz = cz * this.chunkSize + lz;
+                
+                // Create parkour platforms
+                if (Math.abs(wx % 8) < 3 && Math.abs(wz % 8) < 3) {
+                    const platformHeight = 10 + Math.floor(wx / 8) * 2;
+                    chunk[lx][lz][platformHeight] = 'stone';
+                }
+            }
+
+            renderChunk(cx, cz, chunk) {
+                const group = new THREE.Group();
+                const meshCache = new Map();
+
+                for (let x = 0; x < this.chunkSize; x++) {
+                    for (let z = 0; z < this.chunkSize; z++) {
+                        for (let y = 0; y < chunk[x][z].length; y++) {
+                            const blockType = chunk[x][z][y];
+                            if (blockType === 'air') continue;
+
+                            const wx = cx * this.chunkSize + x;
+                            const wz = cz * this.chunkSize + z;
+
+                            if (!this.isBlockExposed(wx, y, wz)) continue;
+
+                            const block = BlockTypes[blockType];
+                            const key = blockType;
+
+                            if (!meshCache.has(key)) {
+                                const geo = new THREE.BoxGeometry(1, 1, 1);
+                                const mat = new THREE.MeshLambertMaterial({ color: block.color });
+                                meshCache.set(key, { geo, mat });
+                            }
+
+                            const { geo, mat } = meshCache.get(key);
+                            const mesh = new THREE.Mesh(geo, mat);
+                            mesh.position.set(wx, y, wz);
+                            mesh.userData = { block: blockType, pos: { x: wx, y, y, z: wz } };
+                            
+                            group.add(mesh);
+                            this.blockMeshes.set(`${wx},${y},${wz}`, mesh);
+                        }
+                    }
+                }
+
+                group.position.set(0, 0, 0);
+                this.scene.add(group);
+                this.chunks.set(`${cx},${cz}_mesh`, group);
+            }
+
+            isBlockExposed(x, y, z) {
+                const neighbors = [
+                    this.getBlock(x + 1, y, z),
+                    this.getBlock(x - 1, y, z),
+                    this.getBlock(x, y + 1, z),
+                    this.getBlock(x, y - 1, z),
+                    this.getBlock(x, y, z + 1),
+                    this.getBlock(x, y, z - 1)
+                ];
+                return neighbors.some(b => b === 'air' || !b);
+            }
+
+            getBlock(x, y, z) {
+                if (y < 0 || y >= 64) return 'air';
+                
+                const cx = Math.floor(x / this.chunkSize);
+                const cz = Math.floor(z / this.chunkSize);
+                const key = `${cx},${cz}`;
+                
+                const chunk = this.chunks.get(key);
+                if (!chunk) return null;
+
+                const lx = ((x % this.chunkSize) + this.chunkSize) % this.chunkSize;
+                const lz = ((z % this.chunkSize) + this.chunkSize) % this.chunkSize;
+
+                return chunk[lx][lz][y];
+            }
+
+            setBlock(x, y, z, blockType) {
+                if (y < 0 || y >= 64) return false;
+                
+                const cx = Math.floor(x / this.chunkSize);
+                const cz = Math.floor(z / this.chunkSize);
+                const key = `${cx},${cz}`;
+                
+                const chunk = this.chunks.get(key);
+                if (!chunk) return false;
+
+                const lx = ((x % this.chunkSize) + this.chunkSize) % this.chunkSize;
+                const lz = ((z % this.chunkSize) + this.chunkSize) % this.chunkSize;
+
+                chunk[lx][lz][y] = blockType;
+                
+                // Update mesh
+                const meshKey = `${x},${y},${z}`;
+                const existingMesh = this.blockMeshes.get(meshKey);
+                if (existingMesh) {
+                    existingMesh.parent.remove(existingMesh);
+                    this.blockMeshes.delete(meshKey);
+                }
+
+                if (blockType !== 'air') {
+                    const block = BlockTypes[blockType];
+                    const geo = new THREE.BoxGeometry(1, 1, 1);
+                    const mat = new THREE.MeshLambertMaterial({ color: block.color });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.set(x, y, z);
+                    mesh.userData = { block: blockType, pos: { x, y, z } };
+                    
+                    const chunkMesh = this.chunks.get(`${cx},${cz}_mesh`);
+                    if (chunkMesh) {
+                        chunkMesh.add(mesh);
+                        this.blockMeshes.set(meshKey, mesh);
+                    }
+                }
+
+                return true;
+            }
+
+            update(playerPos) {
+                // Dynamic chunk loading (simplified for MVP)
+            }
+
+            dispose() {
+                this.chunks.forEach((value, key) => {
+                    if (key.includes('_mesh')) {
+                        this.scene.remove(value);
+                    }
+                });
+                this.chunks.clear();
+                this.blockMeshes.clear();
+            }
+        }
+
+        // ===========================================
+        // PLAYER CONTROLLER
+        // ===========================================
+        class Player {
+            constructor(camera, mode, world, game) {
+                this.camera = camera;
+                this.mode = mode;
+                this.world = world;
+                this.game = game;
+                
+                this.position = new THREE.Vector3(0, mode.spawnHeight, 0);
+                this.velocity = new THREE.Vector3();
+                this.rotation = new THREE.Euler(0, 0, 0, 'YXZ');
+                
+                this.camera.rotation.order = 'YXZ';
+                this.camera.position.copy(this.position);
+                
+                this.grounded = false;
+                this.flying = false;
+                this.health = mode.hasHealth ? mode.maxHealth : 0;
+                this.selectedSlot = 0;
+
+                this.raycaster = new THREE.Raycaster();
+                this.raycaster.far = 10;
+
+                // BattleModes
+                this.nation = null;
+                this.currentWeapon = 'bow';
+                this.ammo = {
+                    bow: Infinity,
+                    rifle: 30,
+                    shotgun: 8,
+                    sniper: 5
+                };
+
+                this.setupHotbar();
+            }
+
+            setupHotbar() {
+                const slots = document.querySelectorAll('.hotbar-slot');
+                slots.forEach((slot, i) => {
+                    slot.addEventListener('click', () => this.selectSlot(i));
+                    
+                    if (i < this.mode.startingBlocks.length) {
+                        const blockType = this.mode.startingBlocks[i];
+                        slot.textContent = BlockTypes[blockType].name;
+                        slot.dataset.block = blockType;
+                    } else {
+                        slot.textContent = 'Empty';
+                        slot.dataset.block = 'air';
+                    }
+                });
+            }
+
+            selectSlot(index) {
+                this.selectedSlot = index;
+                document.querySelectorAll('.hotbar-slot').forEach((slot, i) => {
+                    slot.classList.toggle('active', i === index);
+                });
+            }
+
+            update() {
+                this.applyPhysics();
+                this.camera.position.copy(this.position);
+                this.camera.rotation.copy(this.rotation);
+            }
+
+            applyPhysics() {
+                if (!this.flying) {
+                    this.velocity.y -= this.mode.gravity;
+                }
+
+                this.position.add(this.velocity);
+
+                // Ground collision
+                const blockBelow = this.world.getBlock(
+                    Math.floor(this.position.x),
+                    Math.floor(this.position.y - 1.8),
+                    Math.floor(this.position.z)
+                );
+
+                if (blockBelow && BlockTypes[blockBelow].solid) {
+                    this.grounded = true;
+                    this.velocity.y = 0;
+                    this.position.y = Math.ceil(this.position.y - 1.8) + 1.8;
+                } else {
+                    this.grounded = false;
+                }
+
+                this.velocity.x *= 0.9;
+                this.velocity.z *= 0.9;
+                if (this.flying) this.velocity.y *= 0.9;
+            }
+
+            move(direction) {
+                const speed = this.flying ? 0.3 : 0.15;
+                const forward = new THREE.Vector3(0, 0, -1).applyEuler(this.rotation);
+                const right = new THREE.Vector3(1, 0, 0).applyEuler(this.rotation);
+
+                if (direction === 'forward') {
+                    this.velocity.add(forward.multiplyScalar(speed));
+                }
+                if (direction === 'back') {
+                    this.velocity.add(forward.multiplyScalar(-speed));
+                }
+                if (direction === 'left') {
+                    this.velocity.add(right.multiplyScalar(-speed));
+                }
+                if (direction === 'right') {
+                    this.velocity.add(right.multiplyScalar(speed));
+                }
+            }
+
+            jump() {
+                if (this.grounded && !this.flying) {
+                    this.velocity.y = this.mode.jumpForce;
+                }
+            }
+
+            toggleFly() {
+                if (this.mode.allowFlying) {
+                    this.flying = !this.flying;
+                    if (this.flying) {
+                        this.velocity.y = 0;
+                    }
+                }
+            }
+
+            breakBlock() {
+                const targetBlock = this.getTargetBlock();
+                if (targetBlock) {
+                    this.world.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, 'air');
+                }
+            }
+
+            placeBlock() {
+                const targetBlock = this.getTargetBlock(true);
+                if (targetBlock) {
+                    const slot = document.querySelectorAll('.hotbar-slot')[this.selectedSlot];
+                    const blockType = slot.dataset.block;
+                    
+                    if (blockType && blockType !== 'air') {
+                        this.world.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, blockType);
+                    }
+                }
+            }
+
+            getTargetBlock(adjacent = false) {
+                this.raycaster.setFromCamera({ x: 0, y: 0 }, this.camera);
+                
+                const blockMeshes = Array.from(this.world.blockMeshes.values());
+                const intersects = this.raycaster.intersectObjects(blockMeshes);
+
+                if (intersects.length > 0) {
+                    const hit = intersects[0];
+                    
+                    if (adjacent && hit.face) {
+                        const normal = hit.face.normal;
+                        return {
+                            x: Math.floor(hit.point.x + normal.x * 0.5),
+                            y: Math.floor(hit.point.y + normal.y * 0.5),
+                            z: Math.floor(hit.point.z + normal.z * 0.5)
+                        };
+                    }
+                    
+                    return {
+                        x: Math.floor(hit.point.x - hit.face.normal.x * 0.5),
+                        y: Math.floor(hit.point.y - hit.face.normal.y * 0.5),
+                        z: Math.floor(hit.point.z - hit.face.normal.z * 0.5)
+                    };
+                }
+                
+                return null;
+            }
+        }
+
+        // ===========================================
+        // INPUT MANAGER
+        // ===========================================
+        class InputManager {
+            constructor(player) {
+                this.player = player;
+                this.keys = {};
+                this.mouseDown = false;
+                this.locked = false;
+
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                // Keyboard
+                document.addEventListener('keydown', (e) => this.onKeyDown(e));
+                document.addEventListener('keyup', (e) => this.onKeyUp(e));
+                
+                // Mouse
+                document.addEventListener('mousedown', (e) => this.onMouseDown(e));
+                document.addEventListener('mouseup', () => this.mouseDown = false);
+                document.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                
+                // Pointer lock
+                document.addEventListener('click', () => {
+                    if (!this.locked && document.getElementById('hud').classList.contains('active')) {
+                        this.requestPointerLock();
+                    }
+                });
+
+                document.addEventListener('pointerlockchange', () => {
+                    this.locked = document.pointerLockElement !== null;
+                });
+
+                // Hotbar numbers
+                for (let i = 1; i <= 5; i++) {
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === i.toString()) {
+                            this.player.selectSlot(i - 1);
+                        }
+                    });
+                }
+            }
+
+            onKeyDown(e) {
+                this.keys[e.key.toLowerCase()] = true;
+
+                // Movement
+                if (e.key === 'w') this.player.move('forward');
+                if (e.key === 's') this.player.move('back');
+                if (e.key === 'a') this.player.move('left');
+                if (e.key === 'd') this.player.move('right');
+                
+                // Jump / Fly up
+                if (e.key === ' ') {
+                    if (this.player.flying) {
+                        this.player.velocity.y = 0.3;
+                    } else {
+                        this.player.jump();
+                    }
+                }
+                
+                // Fly down
+                if (e.key === 'Shift' && this.player.flying) {
+                    this.player.velocity.y = -0.3;
+                }
+
+                // Toggle fly
+                if (e.key === 'f' && this.player.mode.allowFlying) {
+                    this.player.toggleFly();
+                }
+
+                // Pause
+                if (e.key === 'Escape') {
+                    window.game.togglePause();
+                }
+            }
+
+            onKeyUp(e) {
+                this.keys[e.key.toLowerCase()] = false;
+            }
+
+            onMouseDown(e) {
+                if (!this.locked) return;
+                
+                this.mouseDown = true;
+
+                if (e.button === 0) {
+                    this.player.breakBlock();
+                } else if (e.button === 2) {
+                    e.preventDefault();
+                    this.player.placeBlock();
+                }
+            }
+
+            onMouseMove(e) {
+                if (!this.locked) return;
+
+                const sensitivity = 0.002;
+                this.player.rotation.y -= e.movementX * sensitivity;
+                this.player.rotation.x -= e.movementY * sensitivity;
+                this.player.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.rotation.x));
+            }
+
+            requestPointerLock() {
+                document.body.requestPointerLock();
+            }
+
+            exitPointerLock() {
+                document.exitPointerLock();
+            }
+
+            dispose() {
+                document.removeEventListener('keydown', this.onKeyDown);
+                document.removeEventListener('keyup', this.onKeyUp);
+                document.removeEventListener('mousedown', this.onMouseDown);
+                document.removeEventListener('mouseup', this.onMouseUp);
+                document.removeEventListener('mousemove', this.onMouseMove);
+            }
+        }
+
+        // ===========================================
+        // INITIALIZE GAME
+        // ===========================================
+        window.game = new Game();
+
+        // Prevent context menu
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        // FPS Counter
+        let lastTime = performance.now();
+        let frames = 0;
+        setInterval(() => {
+            const now = performance.now();
+            const fps = Math.round(frames * 1000 / (now - lastTime));
+            document.getElementById('fpsInfo').textContent = fps;
+            frames = 0;
+            lastTime = now;
+        }, 1000);
+        
+        function countFrame() {
+            frames++;
+            requestAnimationFrame(countFrame);
+        }
+        countFrame();
+    </script>
+</body>
+</html>

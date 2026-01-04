@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockModes - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #1a1a2e;
+        }
+
+        /* Login Screen */
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .login-container {
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(20px);
+            border: 3px solid rgba(93, 173, 226, 0.5);
+            border-radius: 20px;
+            padding: 50px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-logo img {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            display: block;
+        }
+        .navbar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .nav-btn {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            background: rgba(52, 152, 219, 0.6);
+            padding: 10px 25px;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .nav-btn:hover {
+            background: rgba(52, 152, 219, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-group label {
+            display: block;
+            color: white;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(93, 173, 226, 0.3);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #5DADE2;
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 0 20px rgba(93, 173, 226, 0.3);
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255,255,255,0.4);
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 5px;
+        }
+
+        .input-error {
+            font-size: 12px;
+            color: #e74c3c;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .login-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .login-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .login-btn.primary {
+            background: linear-gradient(135deg, #5DADE2 0%, #3498DB 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(93, 173, 226, 0.4);
+        }
+
+        .login-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(93, 173, 226, 0.6);
+        }
+
+        .login-btn.secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .login-btn.secondary:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+     <nav class="navbar">
+            <div></div>
+            <a href="game.html" class="nav-btn">Home</a>
+        </nav>
+    <!-- Login Screen -->
+    <div id="loginScreen">
+        <div class="login-container">
+            <div class="login-logo">
+                <img src="logo.png" class="logo" alt="BlockModes Logo">
+            </div>
+            
+            <p class="login-subtitle">Enter your username to start playing</p>
+            
+            <div class="input-group">
+                <label for="usernameInput">Username</label>
+                <input 
+                    type="text" 
+                    id="usernameInput" 
+                    placeholder="Enter username (e.g., Player_123)"
+                    maxlength="16"
+                    autocomplete="off"
+                >
+                <div class="input-hint">Letters, numbers, and underscores only (3-16 characters)</div>
+                <div class="input-error" id="usernameError">Invalid username format</div>
+            </div>
+
+            <div class="login-buttons">
+                <button class="login-btn primary" id="loginBtn">Login</button>
+                <button class="login-btn secondary" id="guestBtn">Play as Guest</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===========================================
+        // PLAYER ACCOUNT SYSTEM
+        // ===========================================
+        class AccountSystem {
+            constructor() {
+                this.setupLoginScreen();
+            }
+
+            setupLoginScreen() {
+                const loginBtn = document.getElementById('loginBtn');
+                const guestBtn = document.getElementById('guestBtn');
+                const usernameInput = document.getElementById('usernameInput');
+                const usernameError = document.getElementById('usernameError');
+
+                // Enter key to login
+                usernameInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.handleLogin();
+                    }
+                });
+
+                // Real-time validation
+                usernameInput.addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    if (value && !this.validateUsername(value)) {
+                        usernameError.style.display = 'block';
+                        usernameInput.style.borderColor = '#e74c3c';
+                    } else {
+                        usernameError.style.display = 'none';
+                        usernameInput.style.borderColor = 'rgba(93, 173, 226, 0.3)';
+                    }
+                });
+
+                loginBtn.addEventListener('click', () => this.handleLogin());
+                guestBtn.addEventListener('click', () => this.handleGuest());
+            }
+
+            validateUsername(username) {
+                // Only letters, numbers, and underscores
+                const regex = /^[a-zA-Z0-9_]{3,16}$/;
+                return regex.test(username);
+            }
+
+            handleLogin() {
+                const username = document.getElementById('usernameInput').value.trim();
+                const usernameError = document.getElementById('usernameError');
+
+                if (!username) {
+                    usernameError.textContent = 'Please enter a username';
+                    usernameError.style.display = 'block';
+                    return;
+                }
+
+                if (!this.validateUsername(username)) {
+                    usernameError.textContent = 'Invalid username format';
+                    usernameError.style.display = 'block';
+                    return;
+                }
+
+                const playerData = {
+                    username: username,
+                    isGuest: false,
+                    loginTime: Date.now()
+                };
+
+                this.proceedToGame(playerData);
+            }
+
+            handleGuest() {
+                const guestName = this.generateGuestName();
+                const playerData = {
+                    username: guestName,
+                    isGuest: true,
+                    loginTime: Date.now()
+                };
+
+                this.proceedToGame(playerData);
+            }
+
+            generateGuestName() {
+                const adjectives = ['Swift', 'Brave', 'Epic', 'Mighty', 'Noble', 'Quick', 'Bold', 'Wild', 'Cool', 'Pro'];
+                const nouns = ['Miner', 'Builder', 'Warrior', 'Crafter', 'Hero', 'Player', 'Fighter', 'Knight', 'Hunter', 'Explorer'];
+                const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+                const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+                const randomNum = Math.floor(Math.random() * 9999);
+                return `${randomAdj}_${randomNoun}_${randomNum}`;
+            }
+
+            proceedToGame(playerData) {
+                // Store player data in sessionStorage
+                sessionStorage.setItem('blockmodesPlayer', JSON.stringify(playerData));
+                
+                // Redirect to game page
+                window.location.href = 'game.html';
+            }
+        }
+
+        // Initialize account system
+        const accountSystem = new AccountSystem();
+    </script>
+</body>
+</html>
