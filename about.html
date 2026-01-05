@@ -192,7 +192,7 @@
             line-height: 1.8;
         }
 
-        .founder-section {
+        .credits-section {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             border: 2px solid rgba(255, 255, 255, 0.3);
@@ -204,31 +204,47 @@
             animation-fill-mode: both;
         }
 
-        .founder-section h2 {
+        .credits-section h2 {
             color: white;
             font-size: 36px;
             margin-bottom: 30px;
         }
 
-        .founder-card {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 30px 60px;
-            border-radius: 15px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+        .credits-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
         }
 
-        .founder-name {
+        .credit-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            min-width: 250px;
+            flex: 1;
+            max-width: 350px;
+            transition: transform 0.3s ease;
+        }
+
+        .credit-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .credit-name {
             color: white;
-            font-size: 32px;
+            font-size: 24px;
             font-weight: bold;
             margin-bottom: 10px;
         }
 
-        .founder-title {
+        .credit-role {
             color: rgba(255, 255, 255, 0.8);
-            font-size: 20px;
+            font-size: 16px;
             font-style: italic;
+            line-height: 1.4;
         }
 
         .features-section {
@@ -405,15 +421,22 @@
             </div>
         </div>
 
-        <div class="founder-section">
-            <h2>Meet the Founder</h2>
-            <div class="founder-card">
-                <div class="founder-name">Kreis Stalker</div>
-                <div class="founder-title">Founder & CEO</div>
+        <div class="credits-section">
+            <h2>Credits</h2>
+            <div class="credits-grid">
+                <div class="credit-card">
+                    <div class="credit-name">Kreis Stalker</div>
+                    <div class="credit-role">Game Developer<br>& Graphic Designer</div>
+                </div>
+                <div class="credit-card">
+                    <div class="credit-name">Hawk Ballistic</div>
+                    <div class="credit-role">Texture Maker<br>& Server Developer</div>
+                </div>
+                <div class="credit-card">
+                    <div class="credit-name">Peter</div>
+                    <div class="credit-role">Graphic Designer</div>
+                </div>
             </div>
-            <p style="color: rgba(255, 255, 255, 0.9); margin-top: 30px; font-size: 16px; max-width: 700px; margin-left: auto; margin-right: auto;">
-                Kreis Stalker founded BlockModes with a vision to create an accessible, feature-rich voxel game that anyone could play directly in their browser. With a passion for open-source development and community-driven projects, Kreis leads the team in delivering innovative gaming experiences to players worldwide.
-            </p>
         </div>
 
         <div class="features-section">
@@ -450,7 +473,7 @@
     </div>
 
     <footer>
-        <p>&copy; 2026 BlockModes | Open Source Voxel Game | Founded by Kreis Stalker</p>
+        <p>&copy; 2026 BlockModes | Open Source Voxel Game</p>
         <p style="margin-top: 10px;">Made with ❤️ by the BlockModes Community</p>
     </footer>
 </body>

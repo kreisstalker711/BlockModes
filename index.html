@@ -39,11 +39,27 @@
             z-index: 1000;
         }
 
+        #mainMenu::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
         .logo {
             max-width: 400px;
             width: 60%;
             height: auto;
             margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
         }
 
         .navbar {
@@ -89,11 +105,27 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
 
+        .about-btn {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            z-index: 1001;
+        }
+
+        .updates-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1001;
+        }
+
         .mode-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
             max-width: 800px;
+            position: relative;
+            z-index: 1;
         }
 
         .mode-card {
@@ -422,6 +454,76 @@
             background: rgba(255,0,0,0.3);
             pointer-events: none;
         }
+
+        /* Updates Modal */
+        #updatesModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        #updatesModal.active {
+            display: flex;
+        }
+
+        .updates-content {
+            background: rgba(25, 25, 40, 0.95);
+            border: 2px solid rgba(93, 173, 226, 0.5);
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            color: white;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        .updates-content h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+
+        .update-entry {
+            margin-bottom: 20px;
+        }
+
+        .update-entry h3 {
+            color: #5DADE2;
+            margin-bottom: 5px;
+        }
+
+        .update-entry ul {
+            list-style-position: inside;
+            color: rgba(255,255,255,0.8);
+            margin-left: 10px;
+        }
+
+        .close-updates-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-updates-btn:hover {
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -433,6 +535,8 @@
             <div id="accountDisplay" class="account-display">Account: Guest</div>
             <a href="login.html" class="nav-btn">Login</a>
         </nav>
+        <a href="about.html" class="nav-btn about-btn">About</a>
+        <button id="updatesBtn" class="nav-btn updates-btn">Updates</button>
         <img src="images/logo.png" class="logo" alt="BlockModes Logo">
         <div class="mode-grid">
             <div class="mode-card" data-mode="creative">
@@ -529,6 +633,24 @@
         </div>
         <button class="nation-btn" id="confirmNationBtn">Create Nation</button>
         <button class="nation-btn" id="cancelNationBtn" style="background: #666;">Cancel</button>
+    </div>
+
+    <!-- Updates Modal -->
+    <div id="updatesModal">
+        <div class="updates-content">
+            <button class="close-updates-btn" id="closeUpdatesBtn">×</button>
+            <h2>Latest Updates</h2>
+            
+            <div class="update-entry">
+                <h3>Version 1.0 - Launch</h3>
+                <ul>
+                    <li>Added Creative, Survival, Skyblock modes</li>
+                    <li>New BattleModes with Nation system</li>
+                    <li>Improved Parkour mechanics</li>
+                    <li>Account system and login</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -690,6 +812,28 @@
 
                 document.getElementById('mainMenuBtn').addEventListener('click', () => {
                     this.returnToMenu();
+                });
+
+                // Updates Modal
+                const updatesModal = document.getElementById('updatesModal');
+                const updatesBtn = document.getElementById('updatesBtn');
+                const closeUpdatesBtn = document.getElementById('closeUpdatesBtn');
+
+                // Show on load
+                updatesModal.classList.add('active');
+
+                updatesBtn.addEventListener('click', () => {
+                    updatesModal.classList.add('active');
+                });
+
+                closeUpdatesBtn.addEventListener('click', () => {
+                    updatesModal.classList.remove('active');
+                });
+
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && updatesModal.classList.contains('active')) {
+                        updatesModal.classList.remove('active');
+                    }
                 });
             }
 
@@ -1201,23 +1345,60 @@
                     sniper: 5
                 };
 
+                this.inventory = new Array(5).fill(null).map(() => ({ type: 'air', count: 0 }));
                 this.setupHotbar();
             }
 
             setupHotbar() {
+                // Initialize inventory based on mode
+                if (this.mode.startingBlocks) {
+                    this.mode.startingBlocks.forEach((type, i) => {
+                        if (i < 5) {
+                            this.inventory[i] = { 
+                                type: type, 
+                                count: this.mode.name === 'Creative' ? Infinity : 64 
+                            };
+                        }
+                    });
+                }
+
                 const slots = document.querySelectorAll('.hotbar-slot');
                 slots.forEach((slot, i) => {
                     slot.addEventListener('click', () => this.selectSlot(i));
-                    
-                    if (i < this.mode.startingBlocks.length) {
-                        const blockType = this.mode.startingBlocks[i];
-                        slot.textContent = BlockTypes[blockType].name;
-                        slot.dataset.block = blockType;
+                });
+                
+                this.updateHotbarUI();
+            }
+
+            updateHotbarUI() {
+                const slots = document.querySelectorAll('.hotbar-slot');
+                slots.forEach((slot, i) => {
+                    const item = this.inventory[i];
+                    if (item.type !== 'air') {
+                        const countDisplay = item.count === Infinity ? '∞' : item.count;
+                        slot.textContent = `${BlockTypes[item.type].name} (${countDisplay})`;
+                        slot.dataset.block = item.type;
                     } else {
                         slot.textContent = 'Empty';
                         slot.dataset.block = 'air';
                     }
                 });
+            }
+
+            addToInventory(blockType) {
+                let slotIndex = this.inventory.findIndex(item => item.type === blockType);
+                
+                if (slotIndex !== -1) {
+                    if (this.inventory[slotIndex].count !== Infinity) {
+                        this.inventory[slotIndex].count++;
+                    }
+                } else {
+                    slotIndex = this.inventory.findIndex(item => item.type === 'air');
+                    if (slotIndex !== -1) {
+                        this.inventory[slotIndex] = { type: blockType, count: 1 };
+                    }
+                }
+                this.updateHotbarUI();
             }
 
             selectSlot(index) {
@@ -1261,7 +1442,7 @@
             }
 
             move(direction) {
-                const speed = this.flying ? 0.3 : 0.15;
+                const speed = this.flying ? 0.15 : 0.08;
                 const forward = new THREE.Vector3(0, 0, -1).applyEuler(this.rotation);
                 const right = new THREE.Vector3(1, 0, 0).applyEuler(this.rotation);
 
@@ -1297,18 +1478,30 @@
             breakBlock() {
                 const targetBlock = this.getTargetBlock();
                 if (targetBlock) {
-                    this.world.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, 'air');
+                    const blockType = this.world.getBlock(targetBlock.x, targetBlock.y, targetBlock.z);
+                    if (blockType && blockType !== 'air') {
+                        if (this.mode.name === 'Survival' || this.mode.name === 'Skyblock') {
+                            this.addToInventory(blockType);
+                        }
+                        this.world.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, 'air');
+                    }
                 }
             }
 
             placeBlock() {
                 const targetBlock = this.getTargetBlock(true);
                 if (targetBlock) {
-                    const slot = document.querySelectorAll('.hotbar-slot')[this.selectedSlot];
-                    const blockType = slot.dataset.block;
-                    
-                    if (blockType && blockType !== 'air') {
-                        this.world.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, blockType);
+                    const item = this.inventory[this.selectedSlot];
+                    if (item.type !== 'air' && item.count > 0) {
+                        if (this.world.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, item.type)) {
+                            if (item.count !== Infinity) {
+                                item.count--;
+                                if (item.count <= 0) {
+                                    this.inventory[this.selectedSlot] = { type: 'air', count: 0 };
+                                }
+                                this.updateHotbarUI();
+                            }
+                        }
                     }
                 }
             }
@@ -1321,20 +1514,20 @@
 
                 if (intersects.length > 0) {
                     const hit = intersects[0];
+                    const p = hit.object.position;
                     
                     if (adjacent && hit.face) {
-                        const normal = hit.face.normal;
                         return {
-                            x: Math.floor(hit.point.x + normal.x * 0.5),
-                            y: Math.floor(hit.point.y + normal.y * 0.5),
-                            z: Math.floor(hit.point.z + normal.z * 0.5)
+                            x: p.x + hit.face.normal.x,
+                            y: p.y + hit.face.normal.y,
+                            z: p.z + hit.face.normal.z
                         };
                     }
                     
                     return {
-                        x: Math.floor(hit.point.x - hit.face.normal.x * 0.5),
-                        y: Math.floor(hit.point.y - hit.face.normal.y * 0.5),
-                        z: Math.floor(hit.point.z - hit.face.normal.z * 0.5)
+                        x: p.x,
+                        y: p.y,
+                        z: p.z
                     };
                 }
                 
@@ -1364,6 +1557,7 @@
                 document.addEventListener('mousedown', (e) => this.onMouseDown(e));
                 document.addEventListener('mouseup', () => this.mouseDown = false);
                 document.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                document.addEventListener('wheel', (e) => this.onWheel(e));
                 
                 // Pointer lock
                 document.addEventListener('click', () => {
@@ -1446,6 +1640,16 @@
                 this.player.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.rotation.x));
             }
 
+            onWheel(e) {
+                if (!this.locked) return;
+                const direction = Math.sign(e.deltaY);
+                if (direction > 0) {
+                    this.player.selectSlot((this.player.selectedSlot + 1) % 5);
+                } else if (direction < 0) {
+                    this.player.selectSlot((this.player.selectedSlot - 1 + 5) % 5);
+                }
+            }
+
             requestPointerLock() {
                 document.body.requestPointerLock();
             }
@@ -1489,4 +1693,5 @@
         countFrame();
     </script>
 </body>
+</html>
 </html>
