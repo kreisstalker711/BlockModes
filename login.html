@@ -18,7 +18,6 @@
             background: #1a1a2e;
         }
 
-        /* Login Screen */
         #loginScreen {
             position: fixed;
             top: 0;
@@ -75,6 +74,7 @@
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
             display: block;
         }
+
         .navbar {
             position: absolute;
             top: 0;
@@ -100,6 +100,7 @@
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
+            cursor: pointer;
         }
 
         .nav-btn:hover {
@@ -163,6 +164,13 @@
             display: none;
         }
 
+        .input-success {
+            font-size: 12px;
+            color: #4CAF50;
+            margin-top: 5px;
+            display: none;
+        }
+
         .login-buttons {
             display: flex;
             gap: 15px;
@@ -208,23 +216,64 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        .welcome-message {
+            background: rgba(76, 175, 80, 0.2);
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: white;
+            text-align: center;
+            display: none;
+        }
+
+        .welcome-message.active {
+            display: block;
+        }
+
+        .logout-section {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logout-btn {
+            background: rgba(231, 76, 60, 0.2);
+            border: 2px solid #e74c3c;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(231, 76, 60, 0.4);
+        }
     </style>
 </head>
 <body>
-     <nav class="navbar">
-            <div></div>
-            <a href="game.html" class="nav-btn">Home</a>
-        </nav>
-    <!-- Login Screen -->
+    <nav class="navbar">
+        <div></div>
+        <a href="index.html" class="nav-btn">Home</a>
+    </nav>
+
     <div id="loginScreen">
         <div class="login-container">
             <div class="login-logo">
                 <img src="images/logo.png" class="logo" alt="BlockModes Logo">
             </div>
             
-            <p class="login-subtitle">Enter your username to start playing</p>
+            <div class="welcome-message" id="welcomeMessage">
+                Welcome back, <span id="currentUsername"></span>!
+            </div>
             
-            <div class="input-group">
+            <p class="login-subtitle" id="loginSubtitle">Enter your username to start playing</p>
+            
+            <div class="input-group" id="loginForm">
                 <label for="usernameInput">Username</label>
                 <input 
                     type="text" 
@@ -235,40 +284,82 @@
                 >
                 <div class="input-hint">Letters, numbers, and underscores only (3-16 characters)</div>
                 <div class="input-error" id="usernameError">Invalid username format</div>
+                <div class="input-success" id="usernameSuccess">Username saved!</div>
             </div>
 
-            <div class="login-buttons">
+            <div class="login-buttons" id="loginButtons">
                 <button class="login-btn primary" id="loginBtn">Login</button>
                 <button class="login-btn secondary" id="guestBtn">Play as Guest</button>
+            </div>
+
+            <div class="logout-section" id="logoutSection" style="display: none;">
+                <button class="logout-btn" id="logoutBtn">Logout & Change Username</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ===========================================
-        // PLAYER ACCOUNT SYSTEM
-        // ===========================================
         class AccountSystem {
             constructor() {
+                this.checkExistingLogin();
                 this.setupLoginScreen();
+            }
+
+            checkExistingLogin() {
+                const storedData = localStorage.getItem('blockmodesPlayer');
+                
+                if (storedData) {
+                    try {
+                        const data = JSON.parse(storedData);
+                        if (data.username && !data.isGuest) {
+                            this.showWelcomeBack(data.username);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing stored player data');
+                        localStorage.removeItem('blockmodesPlayer');
+                    }
+                }
+            }
+
+            showWelcomeBack(username) {
+                const welcomeMessage = document.getElementById('welcomeMessage');
+                const currentUsername = document.getElementById('currentUsername');
+                const loginSubtitle = document.getElementById('loginSubtitle');
+                const loginForm = document.getElementById('loginForm');
+                const loginButtons = document.getElementById('loginButtons');
+                const logoutSection = document.getElementById('logoutSection');
+
+                currentUsername.textContent = username;
+                welcomeMessage.classList.add('active');
+                loginSubtitle.textContent = 'You are already logged in!';
+                loginForm.style.display = 'none';
+                loginButtons.style.display = 'none';
+                logoutSection.style.display = 'block';
+
+                // Auto-redirect to game after 2 seconds
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
             }
 
             setupLoginScreen() {
                 const loginBtn = document.getElementById('loginBtn');
                 const guestBtn = document.getElementById('guestBtn');
+                const logoutBtn = document.getElementById('logoutBtn');
                 const usernameInput = document.getElementById('usernameInput');
                 const usernameError = document.getElementById('usernameError');
+                const usernameSuccess = document.getElementById('usernameSuccess');
 
-                // Enter key to login
                 usernameInput.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
                         this.handleLogin();
                     }
                 });
 
-                // Real-time validation
                 usernameInput.addEventListener('input', (e) => {
                     const value = e.target.value;
+                    usernameSuccess.style.display = 'none';
+                    
                     if (value && !this.validateUsername(value)) {
                         usernameError.style.display = 'block';
                         usernameInput.style.borderColor = '#e74c3c';
@@ -280,10 +371,10 @@
 
                 loginBtn.addEventListener('click', () => this.handleLogin());
                 guestBtn.addEventListener('click', () => this.handleGuest());
+                logoutBtn.addEventListener('click', () => this.handleLogout());
             }
 
             validateUsername(username) {
-                // Only letters, numbers, and underscores
                 const regex = /^[a-zA-Z0-9_]{3,16}$/;
                 return regex.test(username);
             }
@@ -291,6 +382,7 @@
             handleLogin() {
                 const username = document.getElementById('usernameInput').value.trim();
                 const usernameError = document.getElementById('usernameError');
+                const usernameSuccess = document.getElementById('usernameSuccess');
 
                 if (!username) {
                     usernameError.textContent = 'Please enter a username';
@@ -307,10 +399,25 @@
                 const playerData = {
                     username: username,
                     isGuest: false,
-                    loginTime: Date.now()
+                    loginTime: Date.now(),
+                    lastPlayed: Date.now()
                 };
 
-                this.proceedToGame(playerData);
+                // Store in localStorage for persistence
+                localStorage.setItem('blockmodesPlayer', JSON.stringify(playerData));
+                
+                // Also store in sessionStorage for current session
+                sessionStorage.setItem('blockmodesPlayer', JSON.stringify(playerData));
+
+                // Show success message
+                usernameError.style.display = 'none';
+                usernameSuccess.style.display = 'block';
+                document.getElementById('usernameInput').style.borderColor = '#4CAF50';
+
+                // Redirect after short delay
+                setTimeout(() => {
+                    this.proceedToGame(playerData);
+                }, 1000);
             }
 
             handleGuest() {
@@ -321,7 +428,16 @@
                     loginTime: Date.now()
                 };
 
+                // Only store guest in sessionStorage (not persistent)
+                sessionStorage.setItem('blockmodesPlayer', JSON.stringify(playerData));
+                
                 this.proceedToGame(playerData);
+            }
+
+            handleLogout() {
+                localStorage.removeItem('blockmodesPlayer');
+                sessionStorage.removeItem('blockmodesPlayer');
+                window.location.reload();
             }
 
             generateGuestName() {
@@ -334,15 +450,10 @@
             }
 
             proceedToGame(playerData) {
-                // Store player data in sessionStorage
-                sessionStorage.setItem('blockmodesPlayer', JSON.stringify(playerData));
-                
-                // Redirect to game page
                 window.location.href = 'index.html';
             }
         }
 
-        // Initialize account system
         const accountSystem = new AccountSystem();
     </script>
 </body>
