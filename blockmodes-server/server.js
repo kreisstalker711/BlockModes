@@ -16,8 +16,11 @@ const players = {};
 io.on("connection", socket => {
   console.log("Player joined:", socket.id);
 
+  const username = socket.handshake.query.username || "Guest";
+
   // create player
   players[socket.id] = {
+    username,
     x: 0,
     y: 50,
     z: 0,
@@ -35,7 +38,9 @@ io.on("connection", socket => {
 
   // receive movement updates
   socket.on("playerUpdate", data => {
-    players[socket.id] = data;
+    if (players[socket.id]) {
+      Object.assign(players[socket.id], data);
+    }
     socket.broadcast.emit("playerMoved", {
       id: socket.id,
       data

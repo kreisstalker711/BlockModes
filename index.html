@@ -696,6 +696,11 @@
             constructor() {
                 this.players = new Map();
                 this.socket = io("http://localhost:3000");
+                
+                const storedData = localStorage.getItem('blockmodesPlayer');
+                const username = storedData ? JSON.parse(storedData).username : 'Guest';
+
+                this.socket = io("http://localhost:3000", { query: { username } });
                 this.updateInterval = null;
                 this.syncInterval = 50;
                 this.connected = false;
@@ -774,6 +779,7 @@
                     
                     // Add nametag
                     mesh.userData.username = "Player " + id.substr(0, 4);
+                    mesh.userData.username = data.username || ("Player " + id.substr(0, 4));
                     
                     window.game.scene.add(mesh);
                     this.players.set(id, mesh);
@@ -823,6 +829,7 @@
                         <div class="player-item">
                             <div class="player-avatar" style="background: ${this.getPlayerColor(id)};"></div>
                             Player ${id.substr(0, 4)}
+                            ${mesh.userData.username}
                         </div>
                     `;
                 });
