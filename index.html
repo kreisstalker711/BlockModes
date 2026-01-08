@@ -81,7 +81,7 @@
         .account-display {
             color: white;
             font-size: 18px;
-            background: rgba(7, 224, 253, 0.904);
+            background: #1a1a2e;
             padding: 10px 20px;
             border-radius: 8px;
             backdrop-filter: blur(5px);
@@ -150,7 +150,7 @@
         }
 
         .mode-card {
-            background: rgb(12, 64, 236);
+            background: #1a1a2e;
             backdrop-filter: blur(10px);
             border: 2px solid rgba(255,255,255,0.3);
             border-radius: 16px;
@@ -162,8 +162,8 @@
 
         .mode-card:hover {
             transform: translateY(-8px);
-            background: rgb(17, 153, 243);
-            box-shadow: 0 8px 32px rgba(4, 18, 202, 0.3);
+            background: #1a1a2e;
+            box-shadow: 0 8px 32px rgb(186, 187, 255);
         }
 
         .mode-card h2 {
@@ -870,7 +870,7 @@
                 allowFlying: true,
                 breakSpeed: 0,
                 placeSpeed: 0,
-                startingBlocks: ['grass', 'stone', 'dirt', 'wood', 'gold', 'silver'],
+                startingBlocks: ['grass', 'stone', 'dirt', 'wood', 'leaves', 'sand', 'cactus', 'gold', 'silver'],
                 hasHealth: false,
                 gravity: 0.02,
                 jumpForce: 0.15,
@@ -936,6 +936,9 @@
             stone: { name: 'Stone', color: 0x808080, solid: true },
             dirt: { name: 'Dirt', color: 0x8B4513, solid: true },
             wood: { name: 'Wood', color: 0xA0522D, solid: true },
+            leaves: { name: 'Leaves', color: 0x228B22, solid: true },
+            sand: { name: 'Sand', color: 0xE6C288, solid: true },
+            cactus: { name: 'Cactus', color: 0x006400, solid: true },
             gold: { name: 'Gold', color: 0xFFD700, solid: true, hasTexture: true, texturePath: 'textures/gold.png' },
             silver: { name: 'Silver', color: 0xC0C0C0, solid: true, hasTexture: true, texturePath: 'textures/silver.png' }
         };
@@ -1269,6 +1272,10 @@
                     }
                 }
 
+                if (!this.mode.customTerrain) {
+                    this.decorateChunk(chunk, cx, cz);
+                }
+
                 this.chunks.set(key, chunk);
                 this.renderChunk(cx, cz, chunk);
             }
@@ -1277,23 +1284,113 @@
                 const wx = cx * this.chunkSize + lx;
                 const wz = cz * this.chunkSize + lz;
                 
-                const height = 20 + Math.floor(
-                    Math.sin(wx * 0.1) * Math.cos(wz * 0.1) * 8 +
-                    Math.sin(wx * 0.05) * 5
-                );
-
-                for (let y = 0; y < height; y++) {
-                    if (y === height - 1) {
-                        chunk[lx][lz][y] = 'grass';
-                    } else if (y > height - 4) {
-                        chunk[lx][lz][y] = 'dirt';
-                    } else if (Math.random() < 0.02 && y > height - 10) {
-                        chunk[lx][lz][y] = 'gold';
-                    } else {
-                        chunk[lx][lz][y] = 'stone';
+                // Biome generation
+                const biome = Math.sin(wx * 0.005) + Math.sin(wz * 0.005);
+                
+                let height;
+                
+                if (biome > -0.2) {
+                    // Forest
+                    height = 30 + Math.floor(
+                        Math.sin(wx * 0.04) * 5 + 
+                        Math.cos(wz * 0.04) * 5 +
+                        Math.sin(wx * 0.01 + wz * 0.01) * 10
+                    );
+                    
+                    for (let y = 0; y < height; y++) {
+                        if (y === height - 1) {
+                            chunk[lx][lz][y] = 'grass';
+                        } else if (y > height - 4) {
+                            chunk[lx][lz][y] = 'dirt';
+                        } else if (Math.random() < 0.02 && y > height - 10) {
+                            chunk[lx][lz][y] = 'gold';
+                        } else {
+                            chunk[lx][lz][y] = 'stone';
+                        }
+                    }
+                } else {
+                    // Desert
+                    height = 30 + Math.floor(
+                        Math.abs(Math.sin(wx * 0.03 + wz * 0.02)) * 10 +
+                        Math.sin(wx * 0.01) * 5
+                    );
+                    
+                    for (let y = 0; y < height; y++) {
+                        if (y >= height - 4) {
+                            chunk[lx][lz][y] = 'sand';
+                        } else {
+                            chunk[lx][lz][y] = 'stone';
+                        }
                     }
                 }
             }
+
+            decorateChunk(chunk, cx, cz) {
+                for (let x = 2; x < this.chunkSize - 2; x++) {
+                    for (let z = 2; z < this.chunkSize - 2; z++) {
+                        const wx = cx * this.chunkSize + x;
+                        const wz = cz * this.chunkSize + z;
+                        
+                        const biome = Math.sin(wx * 0.005) + Math.sin(wz * 0.005);
+                        
+                        let surfaceY = -1;
+                        for (let y = 63; y >= 0; y--) {
+                            if (chunk[x][z][y] !== 'air') {
+                                surfaceY = y;
+                                break;
+                            }
+                        }
+                        
+                        if (surfaceY > 0 && surfaceY < 60) {
+                            const rand = Math.abs(Math.sin(wx * 12.9898 + wz * 78.233) * 43758.5453) % 1;
+                            
+                            if (biome > -0.2) {
+                                // Forest - Trees
+                                if (rand < 0.02) {
+                                    this.buildTree(chunk, x, z, surfaceY + 1);
+                                }
+                            } else {
+                                // Desert - Cactus
+                                if (rand < 0.01) {
+                                    this.buildCactus(chunk, x, z, surfaceY + 1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            buildTree(chunk, x, z, y) {
+                const height = 4 + Math.floor(Math.random() * 2);
+                
+                // Trunk
+                for (let i = 0; i < height; i++) {
+                    if (y + i < 64) chunk[x][z][y + i] = 'wood';
+                }
+                
+                // Leaves
+                for (let lx = x - 2; lx <= x + 2; lx++) {
+                    for (let lz = z - 2; lz <= z + 2; lz++) {
+                        for (let ly = y + height - 2; ly <= y + height + 1; ly++) {
+                            if (lx >= 0 && lx < this.chunkSize && lz >= 0 && lz < this.chunkSize && ly < 64) {
+                                const dist = Math.abs(lx - x) + Math.abs(lz - z);
+                                if (dist <= 1 || (ly < y + height && dist <= 2)) {
+                                    if (chunk[lx][lz][ly] === 'air') {
+                                        chunk[lx][lz][ly] = 'leaves';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            buildCactus(chunk, x, z, y) {
+                const height = 2 + Math.floor(Math.random() * 2);
+                for (let i = 0; i < height; i++) {
+                    if (y + i < 64) chunk[x][z][y + i] = 'cactus';
+                    }
+                }
 
             generateSkyblock(chunk, lx, lz, cx, cz) {
                 if (cx === 0 && cz === 0 && lx < 5 && lz < 5) {
@@ -1564,7 +1661,7 @@
             }
 
             move(direction) {
-                const speed = this.flying ? 0.15 : 0.08;
+                const speed = this.flying ? 0.1 : 0.05;
                 const forward = new THREE.Vector3(0, 0, -1).applyEuler(this.rotation);
                 const right = new THREE.Vector3(1, 0, 0).applyEuler(this.rotation);
 
@@ -1760,302 +1857,7 @@
             onMouseMove(e) {
                 if (!this.locked) return;
 
-                const sensitivity = 0.002;
-                this.player.rotation.y -= e.movementX * sensitivity;
-                this.player.rotation.x -= e.movementY * sensitivity;
-                this.player.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.rotation.x));
-            }
-
-            onWheel(e) {
-                if (!this.locked) return;
-                const direction = Math.sign(e.deltaY);
-                if (direction > 0) {
-                    this.player.selectSlot((this.player.selectedSlot + 1) % 5);
-                } else if (direction < 0) {
-                    this.player.selectSlot((this.player.selectedSlot - 1 + 5) % 5);
-                }
-            }
-
-            requestPointerLock() {
-                document.body.requestPointerLock();
-            }
-
-            exitPointerLock() {
-                document.exitPointerLock();
-            }
-
-            dispose() {}
-        }
-
-        // ===========================================
-        // INITIALIZE GAME
-        // ===========================================
-        window.game = new Game();
-
-        document.addEventListener('contextmenu', e => e.preventDefault());
-
-        let lastTime = performance.now();
-        let frames = 0;
-        setInterval(() => {
-            const now = performance.now();
-            const fps = Math.round(frames * 1000 / (now - lastTime));
-            document.getElementById('fpsInfo').textContent = fps;
-            frames = 0;
-            lastTime = now;
-        }, 1000);
-        
-        function countFrame() {
-            frames++;
-            requestAnimationFrame(countFrame);
-        }
-        countFrame();
-    </script>
-</body>
-</html>
-            setupEventListeners() {
-                document.addEventListener('keydown', (e) => this.onKeyDown(e));
-                document.addEventListener('keyup', (e) => this.onKeyUp(e));
-                
-                document.addEventListener('mousedown', (e) => this.onMouseDown(e));
-                document.addEventListener('mouseup', () => this.mouseDown = false);
-                document.addEventListener('mousemove', (e) => this.onMouseMove(e));
-                document.addEventListener('wheel', (e) => this.onWheel(e));
-                
-                document.addEventListener('click', () => {
-                    if (!this.locked && document.getElementById('hud').classList.contains('active') && 
-                        !document.getElementById('creativeInventory').classList.contains('active')) {
-                        this.requestPointerLock();
-                    }
-                });
-
-                document.addEventListener('pointerlockchange', () => {
-                    this.locked = document.pointerLockElement !== null;
-                });
-
-                for (let i = 1; i <= 5; i++) {
-                    document.addEventListener('keydown', (e) => {
-                        if (e.key === i.toString()) {
-                            this.player.selectSlot(i - 1);
-                        }
-                    });
-                }
-            }
-
-            onKeyDown(e) {
-                if (e.key === 'Tab') {
-                    e.preventDefault();
-                    if (this.game.currentMode && this.game.currentMode.name === 'Creative') {
-                        this.game.toggleCreativeInventory();
-                    }
-                    return;
-                }
-
-                if (e.key === 'Escape') {
-                    if (document.getElementById('creativeInventory').classList.contains('active')) {
-                        this.game.toggleCreativeInventory();
-                        return;
-                    }
-                    this.game.togglePause();
-                    return;
-                }
-
-                if (document.getElementById('creativeInventory').classList.contains('active')) return;
-
-                this.keys[e.key.toLowerCase()] = true;
-
-                if (e.key === 'w') this.player.move('forward');
-                if (e.key === 's') this.player.move('back');
-                if (e.key === 'a') this.player.move('left');
-                if (e.key === 'd') this.player.move('right');
-                
-                if (e.key === ' ') {
-                    if (this.player.flying) {
-                        this.player.velocity.y = 0.3;
-                    } else {
-                        this.player.jump();
-                    }
-                }
-                
-                if (e.key === 'Shift' && this.player.flying) {
-                    this.player.velocity.y = -0.3;
-                }
-
-                if (e.key === 'f' && this.player.mode.allowFlying) {
-                    this.player.toggleFly();
-                }
-            }
-
-            onKeyUp(e) {
-                this.keys[e.key.toLowerCase()] = false;
-            }
-
-            onMouseDown(e) {
-                if (!this.locked) return;
-                
-                this.mouseDown = true;
-
-                if (e.button === 0) {
-                    this.player.breakBlock();
-                } else if (e.button === 2) {
-                    e.preventDefault();
-                    this.player.placeBlock();
-                }
-            }
-
-            onMouseMove(e) {
-                if (!this.locked) return;
-
-                const sensitivity = 0.002;
-                this.player.rotation.y -= e.movementX * sensitivity;
-                this.player.rotation.x -= e.movementY * sensitivity;
-                this.player.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.rotation.x));
-            }
-
-            onWheel(e) {
-                if (!this.locked) return;
-                const direction = Math.sign(e.deltaY);
-                if (direction > 0) {
-                    this.player.selectSlot((this.player.selectedSlot + 1) % 5);
-                } else if (direction < 0) {
-                    this.player.selectSlot((this.player.selectedSlot - 1 + 5) % 5);
-                }
-            }
-
-            requestPointerLock() {
-                document.body.requestPointerLock();
-            }
-
-            exitPointerLock() {
-                document.exitPointerLock();
-            }
-
-            dispose() {}
-        }
-
-        // ===========================================
-        // INITIALIZE GAME
-        // ===========================================
-        window.game = new Game();
-
-        document.addEventListener('contextmenu', e => e.preventDefault());
-
-        let lastTime = performance.now();
-        let frames = 0;
-        setInterval(() => {
-            const now = performance.now();
-            const fps = Math.round(frames * 1000 / (now - lastTime));
-            document.getElementById('fpsInfo').textContent = fps;
-            frames = 0;
-            lastTime = now;
-        }, 1000);
-        
-        function countFrame() {
-            frames++;
-            requestAnimationFrame(countFrame);
-        }
-        countFrame();
-    </script>
-</body>
-</html>
-            setupEventListeners() {
-                document.addEventListener('keydown', (e) => this.onKeyDown(e));
-                document.addEventListener('keyup', (e) => this.onKeyUp(e));
-                
-                document.addEventListener('mousedown', (e) => this.onMouseDown(e));
-                document.addEventListener('mouseup', () => this.mouseDown = false);
-                document.addEventListener('mousemove', (e) => this.onMouseMove(e));
-                document.addEventListener('wheel', (e) => this.onWheel(e));
-                
-                document.addEventListener('click', () => {
-                    if (!this.locked && document.getElementById('hud').classList.contains('active')) {
-                    if (!this.locked && document.getElementById('hud').classList.contains('active') && 
-                        !document.getElementById('creativeInventory').classList.contains('active')) {
-                        this.requestPointerLock();
-                    }
-                });
-
-                document.addEventListener('pointerlockchange', () => {
-                    this.locked = document.pointerLockElement !== null;
-                });
-
-                for (let i = 1; i <= 5; i++) {
-                    document.addEventListener('keydown', (e) => {
-                        if (e.key === i.toString()) {
-                            this.player.selectSlot(i - 1);
-                        }
-                    });
-                }
-            }
-
-            onKeyDown(e) {
-                if (e.key === 'Tab') {
-                    e.preventDefault();
-                    if (this.game.currentMode && this.game.currentMode.name === 'Creative') {
-                        this.game.toggleCreativeInventory();
-                    }
-                    return;
-                }
-
-                if (e.key === 'Escape') {
-                    if (document.getElementById('creativeInventory').classList.contains('active')) {
-                        this.game.toggleCreativeInventory();
-                        return;
-                    }
-                    this.game.togglePause();
-                    return;
-                }
-
-                if (document.getElementById('creativeInventory').classList.contains('active')) return;
-
-                this.keys[e.key.toLowerCase()] = true;
-
-                if (e.key === 'w') this.player.move('forward');
-                if (e.key === 's') this.player.move('back');
-                if (e.key === 'a') this.player.move('left');
-                if (e.key === 'd') this.player.move('right');
-                
-                if (e.key === ' ') {
-                    if (this.player.flying) {
-                        this.player.velocity.y = 0.3;
-                    } else {
-                        this.player.jump();
-                    }
-                }
-                
-                if (e.key === 'Shift' && this.player.flying) {
-                    this.player.velocity.y = -0.3;
-                }
-
-                if (e.key === 'f' && this.player.mode.allowFlying) {
-                    this.player.toggleFly();
-                }
-
-                if (e.key === 'Escape') {
-                    this.game.togglePause();
-                }
-            }
-
-            onKeyUp(e) {
-                this.keys[e.key.toLowerCase()] = false;
-            }
-
-            onMouseDown(e) {
-                if (!this.locked) return;
-                
-                this.mouseDown = true;
-
-                if (e.button === 0) {
-                    this.player.breakBlock();
-                } else if (e.button === 2) {
-                    e.preventDefault();
-                    this.player.placeBlock();
-                }
-            }
-
-            onMouseMove(e) {
-                if (!this.locked) return;
-
-                const sensitivity = 0.002;
+                const sensitivity = 0.0012;
                 this.player.rotation.y -= e.movementX * sensitivity;
                 this.player.rotation.x -= e.movementY * sensitivity;
                 this.player.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.rotation.x));

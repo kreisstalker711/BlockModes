@@ -18,7 +18,7 @@ io.on("connection", socket => {
 
   const username = socket.handshake.query.username || "Guest";
 
-  // create player
+  // create player with username
   players[socket.id] = {
     username,
     x: 0,
@@ -30,7 +30,7 @@ io.on("connection", socket => {
   // send existing players to new user
   socket.emit("currentPlayers", players);
 
-  // broadcast new player
+  // broadcast new player to others
   socket.broadcast.emit("playerJoined", {
     id: socket.id,
     data: players[socket.id]
@@ -39,11 +39,14 @@ io.on("connection", socket => {
   // receive movement updates
   socket.on("playerUpdate", data => {
     if (players[socket.id]) {
-      Object.assign(players[socket.id], data);
+      players[socket.id].x = data.x;
+      players[socket.id].y = data.y;
+      players[socket.id].z = data.z;
+      players[socket.id].rotY = data.rotY;
     }
     socket.broadcast.emit("playerMoved", {
       id: socket.id,
-      data
+      data: players[socket.id]
     });
   });
 
