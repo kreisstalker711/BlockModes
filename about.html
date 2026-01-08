@@ -214,7 +214,18 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
+            flex-direction: column;
             gap: 30px;
+        }
+        h3 {
+            color: white;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .creditn {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 18px;
+            margin-bottom: 5px;
         }
 
         .credit-card {
@@ -471,18 +482,14 @@
         <div class="credits-section">
             <h2>Credits</h2>
             <div class="credits-grid">
-                <div class="credit-card">
-                    <div class="credit-name">Kreis Stalker</div>
-                    <div class="credit-role">Game Developer<br>& Graphic Designer</div>
-                </div>
-                <div class="credit-card">
-                    <div class="credit-name">Hawk Ballistic</div>
-                    <div class="credit-role">Texture Maker<br>& Server Developer</div>
-                </div>
-                <div class="credit-card">
-                    <div class="credit-name">Peter</div>
-                    <div class="credit-role">Graphic Designer</div>
-                </div>
+                <h3>Owner</h3>
+                <label class=".creditn" style="color: white; font-size: 25px;">Kreis Stalker - </label><p style="color: white; font-size: 25px;">Game Developer, textures, graphics</p>
+                <h3>Textures</h3>
+                <label class=".creditn" style="color: white; font-size: 25px;">HawkB</label>
+                <h3>Graphics</h3>
+                <label class=".creditn" style="color: white; font-size: 25px;">Peter_Parker</label>
+                <h3> Game Testers</h3>
+                <label class=".creditn" style="color: white; font-size: 25px;">hecker</label>
             </div>
         </div>
 
