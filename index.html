@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <title>BlockModes - Voxel Game</title>
     <style>
         * {
@@ -15,7 +16,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
-            background-color: #9cdbff;
+            background-color: #1a1a2e;
         }
 
         #gameCanvas {
@@ -31,7 +32,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #78cdff;
+            background-color:#1a1a2e ;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -477,6 +481,81 @@
             transform: translate(-50%, -100%);
         }
 
+        /* Creative Inventory */
+        #creativeInventory {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(25, 25, 40, 0.95);
+            border: 2px solid rgba(93, 173, 226, 0.5);
+            border-radius: 16px;
+            padding: 30px;
+            width: 600px;
+            max-width: 90%;
+            max-height: 80vh;
+            display: none;
+            flex-direction: column;
+            z-index: 2000;
+            color: white;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        #creativeInventory.active {
+            display: flex;
+        }
+
+        #creativeInventory h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+            font-size: 24px;
+            color: #5DADE2;
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 10px;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .inventory-slot {
+            width: 100%;
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            word-break: break-word;
+            padding: 5px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        .inventory-slot:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #5DADE2;
+            transform: scale(1.05);
+        }
+
+        .inventory-hint {
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 15px;
+        }
+
     </style>
 </head>
 <body>
@@ -572,6 +651,13 @@
         <button class="menu-btn" id="mainMenuBtn">Main Menu</button>
     </div>
 
+    <!-- Creative Inventory -->
+    <div id="creativeInventory">
+        <h2>Creative Inventory</h2>
+        <div class="inventory-grid" id="inventoryGrid"></div>
+        <div class="inventory-hint">Press TAB to close • Click item to set to hotbar</div>
+    </div>
+
     <!-- Updates Modal -->
     <div id="updatesModal">
         <div class="updates-content">
@@ -609,133 +695,104 @@
         class MultiplayerManager {
             constructor() {
                 this.players = new Map();
-                this.myId = this.generatePlayerId();
+                this.socket = io("http://localhost:3000");
                 this.updateInterval = null;
-                this.syncInterval = 100; // Sync every 100ms
+                this.syncInterval = 50;
                 this.connected = false;
                 
                 this.init();
             }
 
-            generatePlayerId() {
-                return 'player_' + Math.random().toString(36).substr(2, 9);
-            }
-
             init() {
-                // Simulate connection
-                this.connected = true;
-                this.updateConnectionStatus(true);
-                
-                // Start syncing
-                this.startSync();
-                
-                // Simulate other players (for demo)
-                this.simulateOtherPlayers();
+                this.socket.on("connect", () => {
+                    this.updateConnectionStatus(true);
+                    this.startSync();
+                });
+
+                this.socket.on("disconnect", () => {
+                    this.updateConnectionStatus(false);
+                    this.stopSync();
+                });
+
+                // when you join
+                this.socket.on("currentPlayers", players => {
+                    for (const id in players) {
+                        if (id === this.socket.id) continue;
+                        this.addRemotePlayer(id, players[id]);
+                    }
+                    this.updatePlayersList();
+                });
+
+                // when new player joins
+                this.socket.on("playerJoined", ({ id, data }) => {
+                    this.addRemotePlayer(id, data);
+                    this.updatePlayersList();
+                });
+
+                // movement updates
+                this.socket.on("playerMoved", ({ id, data }) => {
+                    this.updateRemotePlayer(id, data);
+                });
+
+                // player leaves
+                this.socket.on("playerLeft", id => {
+                    this.removePlayer(id);
+                    this.updatePlayersList();
+                });
             }
 
             startSync() {
+                if (this.updateInterval) clearInterval(this.updateInterval);
                 this.updateInterval = setInterval(() => {
-                    if (window.game && window.game.player) {
-                        this.broadcastPlayerData();
-                        this.updateOtherPlayers();
+                    if (window.game && window.game.player && this.connected) {
+                        const pos = window.game.player.position;
+                        const rot = window.game.player.rotation;
+                        this.socket.emit("playerUpdate", {
+                            x: pos.x,
+                            y: pos.y,
+                            z: pos.z,
+                            rotY: rot.y
+                        });
                     }
                 }, this.syncInterval);
             }
 
-            broadcastPlayerData() {
-                const playerData = {
-                    id: this.myId,
-                    username: this.getUsername(),
-                    position: window.game.player.position.clone(),
-                    rotation: window.game.player.rotation.clone(),
-                    timestamp: Date.now()
-                };
-
-                // Store in sessionStorage for simulation
-                const allPlayers = this.getAllPlayersFromStorage();
-                allPlayers[this.myId] = playerData;
-                sessionStorage.setItem('multiplayer_players', JSON.stringify(allPlayers));
+            stopSync() {
+                if (this.updateInterval) clearInterval(this.updateInterval);
             }
 
-            getAllPlayersFromStorage() {
-                try {
-                    const data = sessionStorage.getItem('multiplayer_players');
-                    return data ? JSON.parse(data) : {};
-                } catch (e) {
-                    return {};
-                }
-            }
-
-            getUsername() {
-                const storedData = localStorage.getItem('blockmodesPlayer');
-                if (storedData) {
-                    const data = JSON.parse(storedData);
-                    return data.username || 'Guest';
-                }
-                return 'Guest';
-            }
-
-            updateOtherPlayers() {
-                const allPlayers = this.getAllPlayersFromStorage();
-                const currentTime = Date.now();
+            addRemotePlayer(id, data) {
+                if (this.players.has(id)) return;
                 
-                // Clean up old players (disconnected)
-                Object.keys(allPlayers).forEach(id => {
-                    if (id !== this.myId && currentTime - allPlayers[id].timestamp > 5000) {
-                        delete allPlayers[id];
-                        this.removePlayer(id);
-                    }
-                });
-
-                // Update active players
-                Object.values(allPlayers).forEach(playerData => {
-                    if (playerData.id !== this.myId) {
-                        this.updatePlayerMesh(playerData);
-                    }
-                });
-
-                this.updatePlayersList(allPlayers);
-            }
-
-            updatePlayerMesh(playerData) {
-                if (!window.game || !window.game.scene) return;
-
-                let playerMesh = this.players.get(playerData.id);
-                
-                if (!playerMesh) {
+                if (window.game && window.game.scene) {
                     // Create new player mesh
                     const geometry = new THREE.BoxGeometry(0.6, 1.8, 0.6);
                     const material = new THREE.MeshLambertMaterial({ 
-                        color: this.getPlayerColor(playerData.id) 
+                        color: this.getPlayerColor(id) 
                     });
-                    playerMesh = new THREE.Mesh(geometry, material);
+                    const mesh = new THREE.Mesh(geometry, material);
                     
                     // Add nametag
-                    playerMesh.userData.username = playerData.username;
+                    mesh.userData.username = "Player " + id.substr(0, 4);
                     
-                    window.game.scene.add(playerMesh);
-                    this.players.set(playerData.id, playerMesh);
+                    window.game.scene.add(mesh);
+                    this.players.set(id, mesh);
+                    this.updateRemotePlayer(id, data);
                 }
+            }
 
-                // Update position
-                if (playerData.position) {
-                    playerMesh.position.set(
-                        playerData.position.x,
-                        playerData.position.y,
-                        playerData.position.z
-                    );
-                }
-
-                // Update rotation
-                if (playerData.rotation) {
-                    playerMesh.rotation.y = playerData.rotation.y;
+            updateRemotePlayer(id, data) {
+                const mesh = this.players.get(id);
+                if (mesh) {
+                    mesh.position.set(data.x, data.y, data.z);
+                    mesh.rotation.y = data.rotY;
                 }
             }
 
             removePlayer(id) {
-                const playerMesh = this.players.get(id);
-                if (playerMesh && window.game && window.game.scene) {
-                    window.game.scene.remove(playerMesh);
+                const mesh = this.players.get(id);
+                if (mesh && window.game && window.game.scene) {
+                    window.game.scene.remove(mesh);
                     this.players.delete(id);
                 }
             }
@@ -746,24 +803,31 @@
                 return colors[hash % colors.length];
             }
 
-            updatePlayersList(allPlayers) {
+            updatePlayersList() {
                 const playersList = document.getElementById('playersList');
                 const playerCount = document.getElementById('playerCount');
                 
                 if (!playersList) return;
 
-                const playersArray = Object.values(allPlayers);
-                playerCount.textContent = playersArray.length;
+                playerCount.textContent = this.players.size + 1;
 
-                playersList.innerHTML = playersArray.map(p => {
-                    const isMe = p.id === this.myId;
-                    return `
-                        <div class="player-item ${isMe ? 'me' : ''}">
-                            <div class="player-avatar" style="background: ${this.getPlayerColor(p.id)};"></div>
-                            ${p.username}${isMe ? ' (You)' : ''}
+                let html = `
+                    <div class="player-item me">
+                        <div class="player-avatar" style="background: #4CAF50;"></div>
+                        You
+                    </div>
+                `;
+
+                this.players.forEach((mesh, id) => {
+                    html += `
+                        <div class="player-item">
+                            <div class="player-avatar" style="background: ${this.getPlayerColor(id)};"></div>
+                            Player ${id.substr(0, 4)}
                         </div>
                     `;
-                }).join('');
+                });
+
+                playersList.innerHTML = html;
             }
 
             updateConnectionStatus(connected) {
@@ -777,42 +841,9 @@
                 }
             }
 
-            simulateOtherPlayers() {
-                // Simulate 2-3 other players for demo
-                const demoPlayers = [
-                    { username: 'Builder_Pro', offset: { x: 5, z: 5 } },
-                    { username: 'Swift_Miner', offset: { x: -5, z: 3 } }
-                ];
-
-                demoPlayers.forEach((demo, i) => {
-                    setInterval(() => {
-                        if (!window.game || !window.game.player) return;
-                        
-                        const pos = window.game.player.position;
-                        const demoId = 'demo_' + i;
-                        
-                        const allPlayers = this.getAllPlayersFromStorage();
-                        allPlayers[demoId] = {
-                            id: demoId,
-                            username: demo.username,
-                            position: {
-                                x: pos.x + demo.offset.x + Math.sin(Date.now() / 1000) * 2,
-                                y: pos.y,
-                                z: pos.z + demo.offset.z + Math.cos(Date.now() / 1000) * 2
-                            },
-                            rotation: { y: Math.sin(Date.now() / 2000) },
-                            timestamp: Date.now()
-                        };
-                        
-                        sessionStorage.setItem('multiplayer_players', JSON.stringify(allPlayers));
-                    }, 100);
-                });
-            }
-
             dispose() {
-                if (this.updateInterval) {
-                    clearInterval(this.updateInterval);
-                }
+                this.stopSync();
+                if (this.socket) this.socket.disconnect();
                 
                 this.players.forEach(mesh => {
                     if (window.game && window.game.scene) {
@@ -832,7 +863,7 @@
                 allowFlying: true,
                 breakSpeed: 0,
                 placeSpeed: 0,
-                startingBlocks: ['grass', 'stone', 'dirt', 'wood', 'gold'],
+                startingBlocks: ['grass', 'stone', 'dirt', 'wood', 'gold', 'silver'],
                 hasHealth: false,
                 gravity: 0.02,
                 jumpForce: 0.15,
@@ -898,7 +929,8 @@
             stone: { name: 'Stone', color: 0x808080, solid: true },
             dirt: { name: 'Dirt', color: 0x8B4513, solid: true },
             wood: { name: 'Wood', color: 0xA0522D, solid: true },
-            gold: { name: 'Gold', color: 0xFFD700, solid: true, hasTexture: true, texturePath: 'textures/gold.png' }
+            gold: { name: 'Gold', color: 0xFFD700, solid: true, hasTexture: true, texturePath: 'textures/gold.png' },
+            silver: { name: 'Silver', color: 0xC0C0C0, solid: true, hasTexture: true, texturePath: 'textures/silver.png' }
         };
 
         // ===========================================
@@ -970,6 +1002,7 @@
                 this.setupRenderer();
                 this.setupUI();
                 this.textureManager = new TextureManager();
+                this.setupCreativeInventory();
             }
 
             setupRenderer() {
@@ -1073,6 +1106,44 @@
                         updatesModal.classList.remove('active');
                     }
                 });
+            }
+
+            setupCreativeInventory() {
+                const grid = document.getElementById('inventoryGrid');
+                grid.innerHTML = '';
+                
+                Object.entries(BlockTypes).forEach(([type, data]) => {
+                    if (type === 'air') return;
+                    
+                    const slot = document.createElement('div');
+                    slot.className = 'inventory-slot';
+                    slot.textContent = data.name;
+                    
+                    // Set background color based on block color
+                    const hexColor = '#' + data.color.toString(16).padStart(6, '0');
+                    slot.style.backgroundColor = hexColor;
+                    
+                    slot.addEventListener('click', () => {
+                        if (this.player) {
+                            this.player.setHotbarSlot(this.player.selectedSlot, type);
+                        }
+                    });
+                    
+                    grid.appendChild(slot);
+                });
+            }
+
+            toggleCreativeInventory() {
+                const inv = document.getElementById('creativeInventory');
+                const isActive = inv.classList.contains('active');
+                
+                if (isActive) {
+                    inv.classList.remove('active');
+                    this.input.requestPointerLock();
+                } else {
+                    inv.classList.add('active');
+                    this.input.exitPointerLock();
+                }
             }
 
             startGame(modeName) {
@@ -1438,6 +1509,14 @@
                 this.updateHotbarUI();
             }
 
+            setHotbarSlot(index, type) {
+                this.inventory[index] = { 
+                    type: type, 
+                    count: this.mode.name === 'Creative' ? Infinity : 64 
+                };
+                this.updateHotbarUI();
+            }
+
             selectSlot(index) {
                 this.selectedSlot = index;
                 document.querySelectorAll('.hotbar-slot').forEach((slot, i) => {
@@ -1591,7 +1670,8 @@
                 document.addEventListener('wheel', (e) => this.onWheel(e));
                 
                 document.addEventListener('click', () => {
-                    if (!this.locked && document.getElementById('hud').classList.contains('active')) {
+                    if (!this.locked && document.getElementById('hud').classList.contains('active') && 
+                        !document.getElementById('creativeInventory').classList.contains('active')) {
                         this.requestPointerLock();
                     }
                 });
@@ -1610,6 +1690,316 @@
             }
 
             onKeyDown(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    if (this.game.currentMode && this.game.currentMode.name === 'Creative') {
+                        this.game.toggleCreativeInventory();
+                    }
+                    return;
+                }
+
+                if (e.key === 'Escape') {
+                    if (document.getElementById('creativeInventory').classList.contains('active')) {
+                        this.game.toggleCreativeInventory();
+                        return;
+                    }
+                    this.game.togglePause();
+                    return;
+                }
+
+                if (document.getElementById('creativeInventory').classList.contains('active')) return;
+
+                this.keys[e.key.toLowerCase()] = true;
+
+                if (e.key === 'w') this.player.move('forward');
+                if (e.key === 's') this.player.move('back');
+                if (e.key === 'a') this.player.move('left');
+                if (e.key === 'd') this.player.move('right');
+                
+                if (e.key === ' ') {
+                    if (this.player.flying) {
+                        this.player.velocity.y = 0.3;
+                    } else {
+                        this.player.jump();
+                    }
+                }
+                
+                if (e.key === 'Shift' && this.player.flying) {
+                    this.player.velocity.y = -0.3;
+                }
+
+                if (e.key === 'f' && this.player.mode.allowFlying) {
+                    this.player.toggleFly();
+                }
+            }
+
+            onKeyUp(e) {
+                this.keys[e.key.toLowerCase()] = false;
+            }
+
+            onMouseDown(e) {
+                if (!this.locked) return;
+                
+                this.mouseDown = true;
+
+                if (e.button === 0) {
+                    this.player.breakBlock();
+                } else if (e.button === 2) {
+                    e.preventDefault();
+                    this.player.placeBlock();
+                }
+            }
+
+            onMouseMove(e) {
+                if (!this.locked) return;
+
+                const sensitivity = 0.002;
+                this.player.rotation.y -= e.movementX * sensitivity;
+                this.player.rotation.x -= e.movementY * sensitivity;
+                this.player.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.rotation.x));
+            }
+
+            onWheel(e) {
+                if (!this.locked) return;
+                const direction = Math.sign(e.deltaY);
+                if (direction > 0) {
+                    this.player.selectSlot((this.player.selectedSlot + 1) % 5);
+                } else if (direction < 0) {
+                    this.player.selectSlot((this.player.selectedSlot - 1 + 5) % 5);
+                }
+            }
+
+            requestPointerLock() {
+                document.body.requestPointerLock();
+            }
+
+            exitPointerLock() {
+                document.exitPointerLock();
+            }
+
+            dispose() {}
+        }
+
+        // ===========================================
+        // INITIALIZE GAME
+        // ===========================================
+        window.game = new Game();
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        let lastTime = performance.now();
+        let frames = 0;
+        setInterval(() => {
+            const now = performance.now();
+            const fps = Math.round(frames * 1000 / (now - lastTime));
+            document.getElementById('fpsInfo').textContent = fps;
+            frames = 0;
+            lastTime = now;
+        }, 1000);
+        
+        function countFrame() {
+            frames++;
+            requestAnimationFrame(countFrame);
+        }
+        countFrame();
+    </script>
+</body>
+</html>
+            setupEventListeners() {
+                document.addEventListener('keydown', (e) => this.onKeyDown(e));
+                document.addEventListener('keyup', (e) => this.onKeyUp(e));
+                
+                document.addEventListener('mousedown', (e) => this.onMouseDown(e));
+                document.addEventListener('mouseup', () => this.mouseDown = false);
+                document.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                document.addEventListener('wheel', (e) => this.onWheel(e));
+                
+                document.addEventListener('click', () => {
+                    if (!this.locked && document.getElementById('hud').classList.contains('active') && 
+                        !document.getElementById('creativeInventory').classList.contains('active')) {
+                        this.requestPointerLock();
+                    }
+                });
+
+                document.addEventListener('pointerlockchange', () => {
+                    this.locked = document.pointerLockElement !== null;
+                });
+
+                for (let i = 1; i <= 5; i++) {
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === i.toString()) {
+                            this.player.selectSlot(i - 1);
+                        }
+                    });
+                }
+            }
+
+            onKeyDown(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    if (this.game.currentMode && this.game.currentMode.name === 'Creative') {
+                        this.game.toggleCreativeInventory();
+                    }
+                    return;
+                }
+
+                if (e.key === 'Escape') {
+                    if (document.getElementById('creativeInventory').classList.contains('active')) {
+                        this.game.toggleCreativeInventory();
+                        return;
+                    }
+                    this.game.togglePause();
+                    return;
+                }
+
+                if (document.getElementById('creativeInventory').classList.contains('active')) return;
+
+                this.keys[e.key.toLowerCase()] = true;
+
+                if (e.key === 'w') this.player.move('forward');
+                if (e.key === 's') this.player.move('back');
+                if (e.key === 'a') this.player.move('left');
+                if (e.key === 'd') this.player.move('right');
+                
+                if (e.key === ' ') {
+                    if (this.player.flying) {
+                        this.player.velocity.y = 0.3;
+                    } else {
+                        this.player.jump();
+                    }
+                }
+                
+                if (e.key === 'Shift' && this.player.flying) {
+                    this.player.velocity.y = -0.3;
+                }
+
+                if (e.key === 'f' && this.player.mode.allowFlying) {
+                    this.player.toggleFly();
+                }
+            }
+
+            onKeyUp(e) {
+                this.keys[e.key.toLowerCase()] = false;
+            }
+
+            onMouseDown(e) {
+                if (!this.locked) return;
+                
+                this.mouseDown = true;
+
+                if (e.button === 0) {
+                    this.player.breakBlock();
+                } else if (e.button === 2) {
+                    e.preventDefault();
+                    this.player.placeBlock();
+                }
+            }
+
+            onMouseMove(e) {
+                if (!this.locked) return;
+
+                const sensitivity = 0.002;
+                this.player.rotation.y -= e.movementX * sensitivity;
+                this.player.rotation.x -= e.movementY * sensitivity;
+                this.player.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.rotation.x));
+            }
+
+            onWheel(e) {
+                if (!this.locked) return;
+                const direction = Math.sign(e.deltaY);
+                if (direction > 0) {
+                    this.player.selectSlot((this.player.selectedSlot + 1) % 5);
+                } else if (direction < 0) {
+                    this.player.selectSlot((this.player.selectedSlot - 1 + 5) % 5);
+                }
+            }
+
+            requestPointerLock() {
+                document.body.requestPointerLock();
+            }
+
+            exitPointerLock() {
+                document.exitPointerLock();
+            }
+
+            dispose() {}
+        }
+
+        // ===========================================
+        // INITIALIZE GAME
+        // ===========================================
+        window.game = new Game();
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        let lastTime = performance.now();
+        let frames = 0;
+        setInterval(() => {
+            const now = performance.now();
+            const fps = Math.round(frames * 1000 / (now - lastTime));
+            document.getElementById('fpsInfo').textContent = fps;
+            frames = 0;
+            lastTime = now;
+        }, 1000);
+        
+        function countFrame() {
+            frames++;
+            requestAnimationFrame(countFrame);
+        }
+        countFrame();
+    </script>
+</body>
+</html>
+            setupEventListeners() {
+                document.addEventListener('keydown', (e) => this.onKeyDown(e));
+                document.addEventListener('keyup', (e) => this.onKeyUp(e));
+                
+                document.addEventListener('mousedown', (e) => this.onMouseDown(e));
+                document.addEventListener('mouseup', () => this.mouseDown = false);
+                document.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                document.addEventListener('wheel', (e) => this.onWheel(e));
+                
+                document.addEventListener('click', () => {
+                    if (!this.locked && document.getElementById('hud').classList.contains('active')) {
+                    if (!this.locked && document.getElementById('hud').classList.contains('active') && 
+                        !document.getElementById('creativeInventory').classList.contains('active')) {
+                        this.requestPointerLock();
+                    }
+                });
+
+                document.addEventListener('pointerlockchange', () => {
+                    this.locked = document.pointerLockElement !== null;
+                });
+
+                for (let i = 1; i <= 5; i++) {
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === i.toString()) {
+                            this.player.selectSlot(i - 1);
+                        }
+                    });
+                }
+            }
+
+            onKeyDown(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    if (this.game.currentMode && this.game.currentMode.name === 'Creative') {
+                        this.game.toggleCreativeInventory();
+                    }
+                    return;
+                }
+
+                if (e.key === 'Escape') {
+                    if (document.getElementById('creativeInventory').classList.contains('active')) {
+                        this.game.toggleCreativeInventory();
+                        return;
+                    }
+                    this.game.togglePause();
+                    return;
+                }
+
+                if (document.getElementById('creativeInventory').classList.contains('active')) return;
+
                 this.keys[e.key.toLowerCase()] = true;
 
                 if (e.key === 'w') this.player.move('forward');
