@@ -578,6 +578,7 @@
                 <button id="logoutBtn" class="nav-btn">Logout</button>
                 <a href="about.html" class="about-btn nav-btn" id="aboutLink">Credits</a>
             </div>
+        <button id="updatesBtn" class="nav-btn updates-btn">Stories</button>
         <button id="updatesBtn" class="nav-btn updates-btn">Updates</button>
         <img src="images/logo.png" class="logo" alt="BlockModes Logo">
         <div class="mode-grid">
@@ -662,10 +663,9 @@
     <div id="updatesModal">
         <div class="updates-content">
             <button class="close-updates-btn" id="closeUpdatesBtn">×</button>
-            <h2>Latest Updates</h2>
+            <h2>Latest Stories</h2>
             
             <div class="update-entry">
-                <h3>Version 1.1 - Multiplayer Update</h3>
                 <ul>
                     <li>Added multiplayer support - play with friends!</li>
                     <li>See other players in real-time</li>
@@ -673,16 +673,21 @@
                     <li>Persistent login system</li>
                     <li>Online player list</li>
                 </ul>
+                <h3>The Gold Update</h3>
+                <img src="images/gold-update.png" alt="Gold Update" style="width: 100%; border-radius: 8px; margin: 10px 0;">
+                <p>Check out the shiny new Gold block! We've added a custom texture to make it look even better. Use it to build luxurious structures and show off your wealth to other players in the game.</p>
             </div>
             
             <div class="update-entry">
-                <h3>Version 1.0 - Launch</h3>
                 <ul>
                     <li>Added Creative, Survival, Skyblock modes</li>
                     <li>New BattleModes with Nation system</li>
                     <li>Improved Parkour mechanics</li>
                     <li>Account system and login</li>
                 </ul>
+                <h3>Terrain Update</h3>
+                <img src="images/terrain-update.png" alt="Terrain Update" style="width: 100%; border-radius: 8px; margin: 10px 0;">
+                <p>We have completely revamped the terrain generation. Explore smoother hills, more interesting landscapes, and better biomes. The world is now more fun to explore and build in!</p>
             </div>
         </div>
     </div>
@@ -871,7 +876,6 @@
                 breakSpeed: 0,
                 placeSpeed: 0,
                 startingBlocks: ['grass', 'stone', 'dirt', 'wood', 'leaves', 'sand', 'cactus', 'gold', 'silver'],
-                hasHealth: false,
                 gravity: 0.02,
                 jumpForce: 0.15,
                 spawnHeight: 50
@@ -940,7 +944,9 @@
             sand: { name: 'Sand', color: 0xE6C288, solid: true },
             cactus: { name: 'Cactus', color: 0x006400, solid: true },
             gold: { name: 'Gold', color: 0xFFD700, solid: true, hasTexture: true, texturePath: 'textures/gold.png' },
-            silver: { name: 'Silver', color: 0xC0C0C0, solid: true, hasTexture: true, texturePath: 'textures/silver.png' }
+            silver: { name: 'Silver', color: 0xC0C0C0, solid: true, hasTexture: true, texturePath: 'textures/silver.png' },
+            graphite: { name: 'Graphite', color: 0x444444, solid: true, hasTexture: true, texturePath: 'textures/graphite.png' },
+            iron: { name: 'Iron', color: 0xEEEEEE, solid: true, hasTexture: true, texturePath: 'textures/iron.png' }
         };
 
         // ===========================================
