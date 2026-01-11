@@ -842,8 +842,7 @@
                     const mesh = new THREE.Mesh(geometry, material);
                     
                     // Add nametag
-                    mesh.userData.username = "Player " + id.substr(0, 4);
-                    mesh.userData.username = data.username || ("Player " + id.substr(0, 4));
+                    mesh.userData.username = data.username ?? `Player_${id.slice(0, 4)}`;
                     
                     window.game.scene.add(mesh);
                     this.players.set(id, mesh);
@@ -852,12 +851,21 @@
             }
 
             updateRemotePlayer(id, data) {
+                this.players.forEach((mesh, id) => {
+    html += `
+        <div class="player-item">
+            <div class="player-avatar" style="background: ${this.getPlayerColor(id)};"></div>
+            ${mesh.userData.username}
+        </div>
+    `;
+});
                 const mesh = this.players.get(id);
                 if (mesh) {
                     mesh.position.set(data.x, data.y, data.z);
                     mesh.rotation.y = data.rotY;
                 }
             }
+
 
             removePlayer(id) {
                 const mesh = this.players.get(id);
@@ -1632,14 +1640,42 @@
             }
 
             createPlayerMesh() {
-                const geometry = new THREE.BoxGeometry(0.6, 1.8, 0.6);
-                const texture = new THREE.TextureLoader().load('images/player.png');
-                texture.magFilter = THREE.NearestFilter;
-                const material = new THREE.MeshLambertMaterial({ map: texture });
-                this.mesh = new THREE.Mesh(geometry, material);
-                this.mesh.visible = false;
-                this.game.scene.add(this.mesh);
-            }
+    const loader = new THREE.TextureLoader();
+    const texture = loader.load('images/player.png');
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+
+    const material = new THREE.MeshLambertMaterial({ map: texture });
+
+    this.mesh = new THREE.Group();
+
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), material);
+    head.position.y = 1.5;
+    this.mesh.add(head);
+
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.3), material);
+    body.position.y = 0.9;
+    this.mesh.add(body);
+
+    const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.2), material);
+    leftArm.position.set(-0.4, 0.9, 0);
+    this.mesh.add(leftArm);
+
+    const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.2), material);
+    rightArm.position.set(0.4, 0.9, 0);
+    this.mesh.add(rightArm);
+
+    const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.7, 0.25), material);
+    leftLeg.position.set(-0.15, 0.2, 0);
+    this.mesh.add(leftLeg);
+
+    const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.7, 0.25), material);
+    rightLeg.position.set(0.15, 0.2, 0);
+    this.mesh.add(rightLeg);
+
+    this.mesh.visible = false;
+    this.game.scene.add(this.mesh);
+}
 
             toggleView() {
                 this.viewMode = (this.viewMode + 1) % 3;
