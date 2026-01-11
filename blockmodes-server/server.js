@@ -14,11 +14,11 @@ const io = new Server(server, {
 const players = {};
 
 io.on("connection", socket => {
-  console.log("Player joined:", socket.id);
-
   const username = socket.handshake.query.username || "Guest";
+  
+  console.log(`Player joined: ${username} (${socket.id})`);
 
-  // create player with username
+  // Create player with username
   players[socket.id] = {
     username,
     x: 0,
@@ -27,16 +27,16 @@ io.on("connection", socket => {
     rotY: 0
   };
 
-  // send existing players to new user
+  // Send existing players to new user
   socket.emit("currentPlayers", players);
 
-  // broadcast new player to others
+  // Broadcast new player to others
   socket.broadcast.emit("playerJoined", {
     id: socket.id,
     data: players[socket.id]
   });
 
-  // receive movement updates
+  // Receive movement updates
   socket.on("playerUpdate", data => {
     if (players[socket.id]) {
       players[socket.id].x = data.x;
@@ -51,7 +51,7 @@ io.on("connection", socket => {
   });
 
   socket.on("disconnect", () => {
-    console.log("Player left:", socket.id);
+    console.log(`Player left: ${username} (${socket.id})`);
     delete players[socket.id];
     io.emit("playerLeft", socket.id);
   });
