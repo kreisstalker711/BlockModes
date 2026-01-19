@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockModes - Settings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a2e;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .settings-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(52, 152, 219, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 12px 25px;
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            background: rgba(52, 152, 219, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .settings-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .sidebar {
+            background: rgba(25, 25, 40, 0.8);
+            border: 2px solid rgba(93, 173, 226, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            height: fit-content;
+            backdrop-filter: blur(10px);
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            margin: 8px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-item:hover {
+            background: rgba(93, 173, 226, 0.2);
+            border-color: rgba(93, 173, 226, 0.5);
+        }
+
+        .menu-item.active {
+            background: rgba(93, 173, 226, 0.3);
+            border-color: #5DADE2;
+        }
+
+        .menu-icon {
+            font-size: 20px;
+        }
+
+        .content-area {
+            background: rgba(25, 25, 40, 0.8);
+            border: 2px solid rgba(93, 173, 226, 0.3);
+            border-radius: 16px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            min-height: 500px;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section h2 {
+            font-size: 32px;
+            margin-bottom: 25px;
+            color: #5DADE2;
+            border-bottom: 2px solid rgba(93, 173, 226, 0.3);
+            padding-bottom: 15px;
+        }
+
+        .setting-group {
+            margin-bottom: 35px;
+        }
+
+        .setting-group h3 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .setting-item:hover {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: rgba(93, 173, 226, 0.3);
+        }
+
+        .setting-label {
+            flex: 1;
+        }
+
+        .setting-label .title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .setting-label .description {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            width: 200px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #5DADE2;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #4A9FD8;
+            transform: scale(1.2);
+        }
+
+        .slider-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: 600;
+            color: #5DADE2;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #4CAF50;
+        }
+
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-switch.active::before {
+            transform: translateX(30px);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .control-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .control-card:hover {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: rgba(93, 173, 226, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .control-action {
+            font-size: 16px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .control-key {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-description {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        .reset-btn {
+            background: rgba(231, 76, 60, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 12px 30px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+        }
+
+        .reset-btn:hover {
+            background: rgba(231, 76, 60, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .settings-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: flex;
+                overflow-x: auto;
+                padding: 15px;
+            }
+
+            .menu-item {
+                white-space: nowrap;
+                margin: 0 5px;
+            }
+
+            .content-area {
+                padding: 25px;
+            }
+
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+
+            input[type="range"] {
+                width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">← Back to Game</a>
+
+    <div class="settings-container">
+        <div class="header">
+            <h1>⚙️ Settings</h1>
+        </div>
+
+        <div class="settings-layout">
+            <div class="sidebar">
+                <div class="menu-item active" data-section="controls">
+                    <span class="menu-icon">🎮</span>
+                    <span>Controls</span>
+                </div>
+                <div class="menu-item" data-section="gameplay">
+                    <span class="menu-icon">⚡</span>
+                    <span>Gameplay</span>
+                </div>
+                <div class="menu-item" data-section="video">
+                    <span class="menu-icon">🖥️</span>
+                    <span>Video</span>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <!-- Controls Section -->
+                <div class="section active" id="controls">
+                    <h2>🎮 Controls</h2>
+                    
+                    <div class="setting-group">
+                        <h3>Mouse Settings</h3>
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="title">Mouse Sensitivity</div>
+                                <div class="description">Adjust how fast you look around</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="slider-container">
+                                    <input type="range" id="sensitivity" min="1" max="100" value="50">
+                                    <span class="slider-value" id="sensitivityValue">50</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="title">Invert Mouse Y-Axis</div>
+                                <div class="description">Flip vertical mouse movement</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="toggle-switch" id="invertY"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Keyboard Controls</h3>
+                        <div class="controls-grid">
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Move Forward</span>
+                                    <span class="control-key">W</span>
+                                </div>
+                                <p class="control-description">Move your character forward in the direction you're facing</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Move Backward</span>
+                                    <span class="control-key">S</span>
+                                </div>
+                                <p class="control-description">Move your character backward</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Move Left</span>
+                                    <span class="control-key">A</span>
+                                </div>
+                                <p class="control-description">Strafe left without changing view direction</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Move Right</span>
+                                    <span class="control-key">D</span>
+                                </div>
+                                <p class="control-description">Strafe right without changing view direction</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Jump</span>
+                                    <span class="control-key">SPACE</span>
+                                </div>
+                                <p class="control-description">Jump or fly upward in creative mode</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Descend (Flying)</span>
+                                    <span class="control-key">SHIFT</span>
+                                </div>
+                                <p class="control-description">Fly downward when in creative flying mode</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Toggle Fly</span>
+                                    <span class="control-key">F</span>
+                                </div>
+                                <p class="control-description">Enable or disable flying mode (Creative only)</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Change View</span>
+                                    <span class="control-key">V</span>
+                                </div>
+                                <p class="control-description">Cycle between first-person and third-person views</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Inventory</span>
+                                    <span class="control-key">TAB</span>
+                                </div>
+                                <p class="control-description">Open creative inventory to select blocks</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Pause Menu</span>
+                                    <span class="control-key">ESC</span>
+                                </div>
+                                <p class="control-description">Open pause menu or close inventory</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Hotbar Slots</span>
+                                    <span class="control-key">1-5</span>
+                                </div>
+                                <p class="control-description">Quickly select hotbar slots 1 through 5</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Break Block</span>
+                                    <span class="control-key">LEFT CLICK</span>
+                                </div>
+                                <p class="control-description">Break the block you're looking at</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Place Block</span>
+                                    <span class="control-key">RIGHT CLICK</span>
+                                </div>
+                                <p class="control-description">Place the selected block from your hotbar</p>
+                            </div>
+
+                            <div class="control-card">
+                                <div class="control-header">
+                                    <span class="control-action">Scroll Hotbar</span>
+                                    <span class="control-key">MOUSE WHEEL</span>
+                                </div>
+                                <p class="control-description">Scroll through your hotbar items</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gameplay Section -->
+                <div class="section" id="gameplay">
+                    <h2>⚡ Gameplay</h2>
+                    
+                    <div class="setting-group">
+                        <h3>Game Settings</h3>
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="title">Field of View (FOV)</div>
+                                <div class="description">Adjust your viewing angle</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="slider-container">
+                                    <input type="range" id="fov" min="60" max="110" value="75">
+                                    <span class="slider-value" id="fovValue">75°</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="title">Auto-Jump</div>
+                                <div class="description">Automatically jump over single blocks</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="toggle-switch" id="autoJump"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="title">Show Coordinates</div>
+                                <div class="description">Display your position in the world</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="toggle-switch active" id="showCoords"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="title">Show FPS Counter</div>
+                                <div class="description">Display frames per second</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="toggle-switch active" id="showFPS"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="title">Block Breaking Particles</div>
+                                <div class="description">Show particles when breaking blocks</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="toggle-switch active" id="particles"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Section -->
+                <div class="section" id="video">
+                    <h2>🖥️ Video</h2>
+                    
+                    <div class="setting-group">
+                        <h3>Display Settings</h3>
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="title">Render Distance</div>
+                                <div class="description">How far you can see (affects performance)</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="slider-container">
+                                    <input type="range" id="renderDistance" min="2" max="16" value="4">
+                                    <span class="slider-value" id="renderDistanceValue">4 chunks</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="title">Smooth Lighting</div>
+                                <div class="description">Enable smooth lighting effects</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="toggle-switch active" id="smoothLighting"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="title">VSync</div>
+                                <div class="description">Synchronize with monitor refresh rate</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="toggle-switch active" id="vsync"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <div class="title">Clouds</div>
+                                <div class="description">Render clouds in the sky</div>
+                            </div>
+                            <div class="setting-control">
+                                <div class="toggle-switch active" id="clouds"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="reset-btn" id="resetBtn">Reset to Default Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Menu navigation
+        const menuItems = document.querySelectorAll('.menu-item');
+        const sections = document.querySelectorAll('.section');
+
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const sectionId = item.dataset.section;
+                
+                menuItems.forEach(m => m.classList.remove('active'));
+                item.classList.add('active');
+                
+                sections.forEach(s => s.classList.remove('active'));
+                document.getElementById(sectionId).classList.add('active');
+            });
+        });
+
+        // Slider updates
+        const sensitivity = document.getElementById('sensitivity');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        sensitivity.addEventListener('input', (e) => {
+            sensitivityValue.textContent = e.target.value;
+        });
+
+        const fov = document.getElementById('fov');
+        const fovValue = document.getElementById('fovValue');
+        fov.addEventListener('input', (e) => {
+            fovValue.textContent = e.target.value + '°';
+        });
+
+        const renderDistance = document.getElementById('renderDistance');
+        const renderDistanceValue = document.getElementById('renderDistanceValue');
+        renderDistance.addEventListener('input', (e) => {
+            renderDistanceValue.textContent = e.target.value + ' chunks';
+        });
+
+        // Toggle switches
+        const toggles = document.querySelectorAll('.toggle-switch');
+        toggles.forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                toggle.classList.toggle('active');
+            });
+        });
+
+        // Reset button
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all settings to default?')) {
+                sensitivity.value = 50;
+                sensitivityValue.textContent = '50';
+                fov.value = 75;
+                fovValue.textContent = '75°';
+                renderDistance.value = 4;
+                renderDistanceValue.textContent = '4 chunks';
+                
+                // Reset toggles
+                document.getElementById('invertY').classList.remove('active');
+                document.getElementById('autoJump').classList.remove('active');
+                document.getElementById('showCoords').classList.add('active');
+                document.getElementById('showFPS').classList.add('active');
+                document.getElementById('particles').classList.add('active');
+                document.getElementById('smoothLighting').classList.add('active');
+                document.getElementById('vsync').classList.add('active');
+                document.getElementById('clouds').classList.add('active');
+                
+                alert('Settings have been reset to default!');
+            }
+        });
+    </script>
+</body>
+</html>

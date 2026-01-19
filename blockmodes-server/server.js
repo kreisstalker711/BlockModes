@@ -20,12 +20,13 @@ io.on("connection", socket => {
 
   // Create player with username
   players[socket.id] = {
-    username,
-    x: 0,
-    y: 50,
-    z: 0,
-    rotY: 0
-  };
+  username,
+  x: 0,
+  y: 2,
+  z: 0,
+  rotY: 0
+};
+
 
   // Send existing players to new user
   socket.emit("currentPlayers", players);

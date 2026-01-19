@@ -616,6 +616,7 @@
                 <span>Account: Guest</span>
             </div>
             <div style="display: flex; gap: 10px;">
+                <a href="settings.html" class="nav-btn">Settings</a>
                 <button id="logoutBtn" class="nav-btn">Logout</button>
                 <a href="login.html" class="nav-btn" id="loginLink">Login</a>
             </div>
@@ -800,8 +801,10 @@
 
                 // movement updates
                 this.socket.on("playerMoved", ({ id, data }) => {
-                    this.updateRemotePlayer(id, data);
-                });
+                console.log("Player moved:", id, data);
+                this.updateRemotePlayer(id, data);
+});
+
 
                 // player leaves
                 this.socket.on("playerLeft", id => {
@@ -850,15 +853,9 @@
                 }
             }
 
+            
+
             updateRemotePlayer(id, data) {
-                this.players.forEach((mesh, id) => {
-    html += `
-        <div class="player-item">
-            <div class="player-avatar" style="background: ${this.getPlayerColor(id)};"></div>
-            ${mesh.userData.username}
-        </div>
-    `;
-});
                 const mesh = this.players.get(id);
                 if (mesh) {
                     mesh.position.set(data.x, data.y, data.z);
@@ -1015,7 +1012,11 @@
             graphite: { name: 'Graphite', color: 0x444444, solid: true, hasTexture: true, texturePath: 'textures/graphite.png' },
             iron: { name: 'Iron', color: 0xEEEEEE, solid: true, hasTexture: true, texturePath: 'textures/iron.png' },
             diamond: { name: 'Diamond', color: 0x00FFFF, solid: true, hasTexture: true, texturePath: 'textures/diamond.png' },
-            coal: { name: 'Coal', color: 0x111111, solid: true, hasTexture: true, texturePath: 'textures/coal.png' }
+            coal: { name: 'Coal', color: 0x111111, solid: true, hasTexture: true, texturePath: 'textures/coal.png' },
+            grey_concrete: { name: 'Grey Concrete', color: 0x959595, solid: true, hasTexture: true, texturePath: 'textures/grey_concrete.png' },
+            red_concrete: { name: 'Red Concrete', color: 0x8e2020, solid: true, hasTexture: true, texturePath: 'textures/red_concrete.png' },
+            black_concrete: { name: 'Black Concrete', color: 0x080808, solid: true, hasTexture: true, texturePath: 'textures/black_concrete.png' },
+            dark_grey_concrete: { name: 'Dark Grey Concrete', color: 0x404040, solid: true, hasTexture: true, texturePath: 'textures/dark_grey_concrete.png' }
         };
 
         // ===========================================
