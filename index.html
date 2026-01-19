@@ -767,16 +767,15 @@
                 this.syncInterval = 50;
                 this.connected = false;
                 
-                this.playerTexture = new THREE.TextureLoader().load('images/player.png');
-                this.playerTexture.magFilter = THREE.NearestFilter;
-                this.playerTexture.minFilter = THREE.NearestFilter;
                 this.init();
+                this.updatePlayersList();
             }
 
             init() {
                 this.socket.on("connect", () => {
                     this.updateConnectionStatus(true);
                     this.startSync();
+                    this.updatePlayersList();
                 });
 
                 this.socket.on("disconnect", () => {
@@ -835,20 +834,27 @@
 
             addRemotePlayer(id, data) {
                 if (this.players.has(id)) return;
+                data = data || {};
                 
                 if (window.game && window.game.scene) {
                     // Create new player mesh
                     const geometry = new THREE.BoxGeometry(0.6, 1.8, 0.6);
-                    const material = new THREE.MeshLambertMaterial({ 
-                        map: this.playerTexture
-                    });
+                    const color = this.getPlayerColor(id);
+                    const material = new THREE.MeshLambertMaterial({ color: color });
                     const mesh = new THREE.Mesh(geometry, material);
                     
                     // Add nametag
-                    mesh.userData.username = data.username ?? `Player_${id.slice(0, 4)}`;
+                    mesh.userData.username = data.username || `Player_${id.slice(0, 4)}`;
                     
                     window.game.scene.add(mesh);
                     this.players.set(id, mesh);
+                    
+                    // Ensure valid position data to prevent invisible players
+                    if (data.x === undefined) data.x = 0;
+                    if (data.y === undefined) data.y = 50;
+                    if (data.z === undefined) data.z = 0;
+                    if (data.rotY === undefined) data.rotY = 0;
+                    
                     this.updateRemotePlayer(id, data);
                 }
             }
@@ -897,7 +903,6 @@
                     html += `
                         <div class="player-item">
                             <div class="player-avatar" style="background: ${this.getPlayerColor(id)};"></div>
-                            Player ${id.substr(0, 4)}
                             ${mesh.userData.username}
                         </div>
                     `;
@@ -1641,12 +1646,7 @@
             }
 
             createPlayerMesh() {
-    const loader = new THREE.TextureLoader();
-    const texture = loader.load('images/player.png');
-    texture.magFilter = THREE.NearestFilter;
-    texture.minFilter = THREE.NearestFilter;
-
-    const material = new THREE.MeshLambertMaterial({ map: texture });
+    const material = new THREE.MeshLambertMaterial({ color: 0x3498db });
 
     this.mesh = new THREE.Group();
 
