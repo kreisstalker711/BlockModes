@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="images/favicon.ico" type="image/x-icon">
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <meta name="google-site-verification" content="Kj4Y82L9wAp13p1ksrNwwO2zdARdWsERXBj6Of-0gWM" />
     <title>BlockModes - Voxel Game</title>
     <style>
         * {
@@ -1312,7 +1313,7 @@
         // ===========================================
         // WORLD / CHUNK SYSTEM
         // ===========================================
-        class World {
+        update(playerPos) {
             constructor(scene, mode, textureManager) {
                 this.scene = scene;
                 this.mode = mode;
@@ -1361,22 +1362,7 @@
                 this.renderChunk(cx, cz, chunk);
             }
 
-            generateTerrain(chunk, lx, lz, cx, cz) {
-                const wx = cx * this.chunkSize + lx;
-                const wz = cz * this.chunkSize + lz;
-                
-                // Biome generation
-                const biome = Math.sin(wx * 0.005) + Math.sin(wz * 0.005);
-                
-                let height;
-                
-                if (biome > -0.2) {
-                    // Forest
-                    height = 30 + Math.floor(
-                        Math.sin(wx * 0.04) * 5 + 
-                        Math.cos(wz * 0.04) * 5 +
-                        Math.sin(wx * 0.01 + wz * 0.01) * 10
-                    );
+            
                     
                     for (let y = 0; y < height; y++) {
                         if (y === height - 1) {
