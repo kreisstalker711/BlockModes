@@ -41,7 +41,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
+            overflow-y: auto;
+            padding: 100px 20px 40px 20px;
             z-index: 1000;
         }
 
@@ -69,7 +71,7 @@
         }
 
         .navbar {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
@@ -129,17 +131,11 @@
         }
 
         .about-btn {
-            position: absolute;
-            bottom: 80px;
-            left: 20px;
-            z-index: 1001;
+            /* Position removed for flow layout */
         }
 
         .updates-btn {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            z-index: 1001;
+            /* Position removed for flow layout */
         }
 
         .mode-grid {
@@ -148,6 +144,21 @@
             gap: 20px;
             max-width: 800px;
             position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 768px) {
+            .mode-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .menu-footer {
+            display: flex;
+            gap: 15px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
             z-index: 1;
         }
 
@@ -600,6 +611,81 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Mobile Controls */
+        #mobileControls {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1002;
+        }
+
+        @media (max-width: 1024px) {
+            #mobileControls {
+                display: block;
+            }
+            .inventory-hint {
+                display: none;
+            }
+        }
+
+        .joystick-zone {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .mobile-btn {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            pointer-events: auto;
+            touch-action: none;
+            user-select: none;
+            backdrop-filter: blur(5px);
+        }
+
+        .mobile-btn:active {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0.95);
+        }
+
+        #jumpBtn { bottom: 40px; right: 40px; }
+        #flyBtn { bottom: 120px; right: 40px; font-size: 16px; }
+        #breakBtn { bottom: 40px; right: 120px; background: rgba(231, 76, 60, 0.3); }
+        #placeBtn { bottom: 120px; right: 120px; background: rgba(46, 204, 113, 0.3); }
+        #invToggleBtn { top: 20px; right: 20px; width: 40px; height: 40px; font-size: 18px; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -623,12 +709,6 @@
                 <a href="login.html" class="nav-btn" id="loginLink">Login</a>
             </div>
         </nav>
-        <div style="display: flex; gap: 10px;">
-                <button id="logoutBtn" class="nav-btn">Logout</button>
-                <a href="about.html" class="about-btn nav-btn" id="aboutLink">Credits</a>
-            </div>
-        <button id="updatesBtn" class="nav-btn updates-btn">Stories</button>
-        <button id="updatesBtn" class="nav-btn updates-btn">Updates</button>
         <img src="images/logo.png" class="logo" alt="BlockModes Logo">
         <div class="mode-grid">
         
@@ -652,6 +732,12 @@
                 <h2>⚔️ BattleModes</h2>
                 <p>Create nations, build borders, fight for territory!</p>
             </div>
+        </div>
+
+        <div class="menu-footer">
+            <a href="about.html" class="nav-btn">Credits</a>
+            <button id="updatesBtn" class="nav-btn">Stories</button>
+            <button class="nav-btn updates-btn">Updates</button>
         </div>
     </div>
 
@@ -692,6 +778,18 @@
             <div class="status-dot" id="statusDot"></div>
             <span id="statusText">Connected</span>
         </div>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div id="mobileControls">
+        <div class="joystick-zone" id="joystickZone">
+            <div class="joystick-knob" id="joystickKnob"></div>
+        </div>
+        <div class="mobile-btn" id="jumpBtn">🦘</div>
+        <div class="mobile-btn" id="flyBtn">🕊️</div>
+        <div class="mobile-btn" id="breakBtn">⛏️</div>
+        <div class="mobile-btn" id="placeBtn">🧱</div>
+        <div class="mobile-btn" id="invToggleBtn">🎒</div>
     </div>
 
     <!-- Pause Menu -->
@@ -1295,6 +1393,7 @@
                 if (!this.paused) {
                     this.player.update();
                     this.world.update(this.player.position);
+                    this.input.update(); // Update input state
                     
                     const pos = this.player.position;
                     document.getElementById('posInfo').textContent = 
@@ -1899,8 +1998,14 @@
                 this.keys = {};
                 this.mouseDown = false;
                 this.locked = false;
+                
+                // Mobile inputs
+                this.joystickVector = { x: 0, y: 0 };
+                this.touchLookStart = { x: 0, y: 0 };
+                this.isTouchingLook = false;
 
                 this.setupEventListeners();
+                this.setupMobileControls();
             }
 
             setupEventListeners() {
@@ -1931,6 +2036,115 @@
                     });
                 }
             }
+            
+            setupMobileControls() {
+                const joystickZone = document.getElementById('joystickZone');
+                const joystickKnob = document.getElementById('joystickKnob');
+                
+                joystickZone.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.handleJoystick(e.touches[0], joystickZone, joystickKnob);
+                }, { passive: false });
+
+                joystickZone.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    this.handleJoystick(e.touches[0], joystickZone, joystickKnob);
+                }, { passive: false });
+
+                joystickZone.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.joystickVector = { x: 0, y: 0 };
+                    joystickKnob.style.transform = `translate(-50%, -50%)`;
+                }, { passive: false });
+
+                // Buttons
+                document.getElementById('jumpBtn').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.keys[' '] = true;
+                });
+                document.getElementById('jumpBtn').addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.keys[' '] = false;
+                });
+
+                document.getElementById('flyBtn').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (this.player.mode.allowFlying) this.player.toggleFly();
+                });
+
+                document.getElementById('breakBtn').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.player.breakBlock();
+                });
+
+                document.getElementById('placeBtn').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.player.placeBlock();
+                });
+                
+                document.getElementById('invToggleBtn').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.game.toggleCreativeInventory();
+                });
+
+                // Camera Look (Right side of screen)
+                document.addEventListener('touchstart', (e) => {
+                    // If not on controls
+                    if (e.target.closest('.mobile-btn') || e.target.closest('.joystick-zone')) return;
+                    
+                    const touch = e.changedTouches[0];
+                    if (touch.clientX > window.innerWidth / 2) {
+                        this.isTouchingLook = true;
+                        this.touchLookStart = { x: touch.clientX, y: touch.clientY };
+                    }
+                });
+
+                document.addEventListener('touchmove', (e) => {
+                    if (!this.isTouchingLook) return;
+                    const touch = Array.from(e.changedTouches).find(t => t.clientX > window.innerWidth / 2);
+                    if (touch) {
+                        const dx = touch.clientX - this.touchLookStart.x;
+                        const dy = touch.clientY - this.touchLookStart.y;
+                        
+                        const sensitivity = 0.005;
+                        this.player.rotation.y -= dx * sensitivity;
+                        this.player.rotation.x -= dy * sensitivity;
+                        this.player.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.player.rotation.x));
+                        
+                        this.touchLookStart = { x: touch.clientX, y: touch.clientY };
+                    }
+                });
+
+                document.addEventListener('touchend', () => {
+                    this.isTouchingLook = false;
+                });
+            }
+
+            handleJoystick(touch, zone, knob) {
+                const rect = zone.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const maxDist = rect.width / 2;
+                
+                let dx = touch.clientX - centerX;
+                let dy = touch.clientY - centerY;
+                
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist > maxDist) {
+                    dx = (dx / dist) * maxDist;
+                    dy = (dy / dist) * maxDist;
+                }
+                
+                knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                
+                // Normalize for movement (-1 to 1)
+                this.joystickVector = {
+                    x: dx / maxDist,
+                    y: dy / maxDist
+                };
+            }
 
             onKeyDown(e) {
                 if (e.key === 'Tab') {
@@ -1953,22 +2167,9 @@
                 if (document.getElementById('creativeInventory').classList.contains('active')) return;
 
                 this.keys[e.key.toLowerCase()] = true;
-
-                if (e.key === 'w') this.player.move('forward');
-                if (e.key === 's') this.player.move('back');
-                if (e.key === 'a') this.player.move('left');
-                if (e.key === 'd') this.player.move('right');
                 
                 if (e.key === ' ') {
-                    if (this.player.flying) {
-                        this.player.velocity.y = 0.3;
-                    } else {
-                        this.player.jump();
-                    }
-                }
-                
-                if (e.key === 'Shift' && this.player.flying) {
-                    this.player.velocity.y = -0.3;
+                    // Jump logic moved to update loop for consistency
                 }
 
                 if (e.key === 'f' && this.player.mode.allowFlying) {
@@ -2022,6 +2223,33 @@
 
             exitPointerLock() {
                 document.exitPointerLock();
+            }
+            
+            update() {
+                // Keyboard Movement
+                if (this.keys['w']) this.player.move('forward');
+                if (this.keys['s']) this.player.move('back');
+                if (this.keys['a']) this.player.move('left');
+                if (this.keys['d']) this.player.move('right');
+                
+                if (this.keys[' ']) {
+                     if (this.player.flying) {
+                        this.player.velocity.y = 0.3;
+                    } else {
+                        this.player.jump();
+                    }
+                }
+                if (this.keys['shift'] && this.player.flying) {
+                    this.player.velocity.y = -0.3;
+                }
+
+                // Joystick Movement
+                if (Math.abs(this.joystickVector.y) > 0.1) {
+                    this.player.move(this.joystickVector.y < 0 ? 'forward' : 'back');
+                }
+                if (Math.abs(this.joystickVector.x) > 0.1) {
+                    this.player.move(this.joystickVector.x < 0 ? 'left' : 'right');
+                }
             }
 
             dispose() {}
