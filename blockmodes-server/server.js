@@ -3,6 +3,10 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 const app = express();
+
+// Serve client folder
+app.use(express.static("../client"));
+
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -13,51 +17,45 @@ const io = new Server(server, {
 
 const players = {};
 
-io.on("connection", socket => {
+io.on("connection", (socket) => {
   const username = socket.handshake.query.username || "Guest";
-  
+
   console.log(`Player joined: ${username} (${socket.id})`);
 
-  // Create player with username
   players[socket.id] = {
-  username,
-  x: 0,
-  y: 2,
-  z: 0,
-  rotY: 0
-};
+    username,
+    x: 0,
+    y: 0
+  };
 
-
-  // Send existing players to new user
+  // Send all current players to new player
   socket.emit("currentPlayers", players);
 
-  // Broadcast new player to others
+  // Tell others someone joined
   socket.broadcast.emit("playerJoined", {
     id: socket.id,
     data: players[socket.id]
   });
 
-  // Receive movement updates
-  socket.on("playerUpdate", data => {
+  socket.on("playerMove", (data) => {
     if (players[socket.id]) {
       players[socket.id].x = data.x;
       players[socket.id].y = data.y;
-      players[socket.id].z = data.z;
-      players[socket.id].rotY = data.rotY;
+
+      socket.broadcast.emit("playerMoved", {
+        id: socket.id,
+        data: players[socket.id]
+      });
     }
-    socket.broadcast.emit("playerMoved", {
-      id: socket.id,
-      data: players[socket.id]
-    });
   });
 
   socket.on("disconnect", () => {
-    console.log(`Player left: ${username} (${socket.id})`);
+    console.log(`Player left: ${username}`);
     delete players[socket.id];
     io.emit("playerLeft", socket.id);
   });
 });
 
 server.listen(3000, () => {
-  console.log("✅ BlockModes server running on http://localhost:3000");
+  console.log("✅ Server running at http://localhost:3000");
 });
